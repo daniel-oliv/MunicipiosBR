@@ -10,7 +10,7 @@ PackChart.prototype.initVis = function(){
     var vis = this;
     vis.width = $(vis.parentElement).width();
     vis.height = 800;
-
+    console.log(vis.parentElement)
     vis.svg = d3.select(vis.parentElement).append("svg")
         .attr("width", vis.width)
         .attr("height", vis.height);
@@ -28,9 +28,18 @@ PackChart.prototype.initVis = function(){
         .padding(3);
 
     
-
+    vis.initPizzas();
     //console.log($(vis.parentElement).width());
     vis.update();
+}
+
+
+PackChart.prototype.initPizzas = function()
+{
+    var vis = this;
+    vis.pie = d3.pie()
+        .sort(null)
+        .value(function(d) { return d; });
 }
 
 PackChart.prototype.update = function()
@@ -43,17 +52,19 @@ PackChart.prototype.update = function()
     //console.log(vis.root);
 
     // Add a group for all the descendents of the root node
+    /// vis.node represents all groups since we call selectAll and enter() method
     vis.node = vis.svg.select("g")
     .selectAll("g")
     .data(vis.root.descendants())
     .enter().append("g")
         .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
         .attr("class", function(d) { return "node" + (!d.children ? " node--leaf" : d.depth ? "" : " node--root"); })
-        .each(function(d) { d.node = this; })
+        .each(function(d) { /*console.log(this);*/d.node = this; })
         .on("mouseover", vis.hovered(true))
         .on("mouseout", vis.hovered(false));
-
-    // Append a circle to each node. Color-coded by level of the hierarchy 
+    console.log("svg", vis.svg);
+    console.log("node", vis.node);
+    // Append a circle to each node.
     vis.node.append("circle")
         .attr("id", function(d) { return "node-" + d.id; })
         .attr("r", function(d) { return d.r; })
@@ -81,6 +92,12 @@ PackChart.prototype.update = function()
     // Simple tooltip
     vis.node.append("title")
         .text(function(d) { return d.data.sigla + "\n" + formatNum(d.value) + vis.valueLegend; });
+    
+        // vis.Pizzas = [];
+    // vis.leaf
+    //     .each((d)=>{
+    //         //console.log("parent inside here", vis.parentElement)
+    //         vis.Pizzas.push(new PizzaChart(vis.parentElement.toString(), d));})
     
 }
 

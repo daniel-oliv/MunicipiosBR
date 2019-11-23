@@ -76,7 +76,7 @@ LineChart.prototype.update = function()
 
     vis.printLegend();
 
-    vis.yMax = d3.max(hoveredNumMun.slice(0,2).map(d=>{return d.data["2010"];}));
+    vis.yMax = d3.max(hoveredNumMun.slice(0,2).map(d=>{return d.data.qtMun["2010"];}));
     //console.log(vis.yMax);
     vis.x.domain(d3.extent(vis.data, function(d){ return timeParseYear(d.x) ; }));
     vis.y.domain([0, vis.yMax]);
@@ -108,7 +108,7 @@ LineChart.prototype.update = function()
         
         vis.lines
             .transition(vis.t)
-            .attr("d", function(d){return vis.line(getXYArray(d.data, yearKeys))});
+            .attr("d", function(d){return vis.line(getXYArray(d.data.qtMun, yearKeys))});
         
     //console.log(vis.lines.length);
     
