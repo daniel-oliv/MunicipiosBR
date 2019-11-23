@@ -54,3 +54,13 @@ body {
 	padding-top: 10px;
 	padding-bottom: 10px;
 }
+
+.node--hover circle {
+	stroke: #000;
+	stroke-width: 2px;
+}
+
+.node--root{
+	stroke: #777;
+	stroke-width: 1px;
+}

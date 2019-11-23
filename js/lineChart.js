@@ -2,7 +2,7 @@ LineChart = function(_parentElement, _data, _title = ""){
     this.parentElement = _parentElement;
     this.data = _data;
     this.title = _title;
-    console.log(_parentElement);
+    //console.log(_parentElement);
     this.initVis();
 };
 
@@ -11,7 +11,8 @@ LineChart.prototype.initVis = function(){
     
     vis.margin = { left:60, right:50, top:30, bottom:60 };
     vis.height = 350 - vis.margin.top - vis.margin.bottom;
-    vis.width = 470 - vis.margin.left - vis.margin.right;
+    vis.width = $(vis.parentElement).width() - vis.margin.left - vis.margin.right;
+    //console.log(vis.width);
 
     vis.svg = d3.select(vis.parentElement)
             .append("svg")
@@ -23,12 +24,14 @@ LineChart.prototype.initVis = function(){
 
     vis.t = function(){ return d3.transition().duration(500); }
 
-    // Add line to chart
-    vis.g.append("path")
-        .attr("class", "line")
-        .attr("fill", "none")
-        .attr("stroke", "grey")
-        .attr("stroke-width", "3px");
+    //!
+    vis.legendX = vis.width;
+    vis.legendY = vis.height * 0.6;
+    vis.legend = vis.svg.append("g")
+        .attr("transform", "translate("+ vis.legendX +","+ vis.legendY + ")")
+        .attr("width", vis.width/5)
+        .attr("height", vis.height/5)
+        .attr("fill", "red");
 
     // Scales
     vis.x = d3.scaleTime().range([0, vis.width]);
@@ -71,8 +74,12 @@ LineChart.prototype.update = function()
 {
     var vis = this;
 
+    vis.printLegend();
+
+    vis.yMax = d3.max(hoveredNumMun.slice(0,2).map(d=>{return d.data["2010"];}));
+    //console.log(vis.yMax);
     vis.x.domain(d3.extent(vis.data, function(d){ return timeParseYear(d.x) ; }));
-    vis.y.domain(d3.extent(vis.data, function(d){ return d.y; }));
+    vis.y.domain([0, vis.yMax]);
     // vis.y.domain([d3.min(vis.data, function(d){ return d.y; }) / 1.005, 
     //     d3.max(vis.data, function(d){ return d[selectedAttribute]; }) * 1.005]);
 
@@ -85,9 +92,46 @@ LineChart.prototype.update = function()
         .x(function(d){ return vis.x(timeParseYear(d.x));    })
         .y(function(d){ return vis.y(d.y);    });
 
-    vis.g.select(".line")
-        .transition(vis.t)
-        .attr("d", vis.line(vis.data));
+    vis.lines =vis.g.selectAll(".line")
+        .data(hoveredNumMun.slice(0,2), function(d){return d.id;});
+    
+    vis.lines.exit().remove();
+    //console.log("vis.lines ", vis.lines);
+    vis.lines = vis.lines
+        .enter()
+        .append("path")
+            .attr("class", "line")
+            .attr("fill", "none")
+            .attr("stroke", (place)=>{return place.data.color ? place.data.color : "black";})
+            .attr("stroke-width", "3px")
+        .merge(vis.lines)
+        
+        vis.lines
+            .transition(vis.t)
+            .attr("d", function(d){return vis.line(getXYArray(d.data, yearKeys))});
+        
+    //console.log(vis.lines.length);
+    
 }
 
+LineChart.prototype.printLegend = function(){
+    var vis = this;
+    vis.legend.selectAll("g").remove();
+    hoveredNumMun.slice(0,2).forEach((place, i)=>{
+		vis.legendRow = vis.legend.append("g")
+			.attr("transform", "translate(0," + (i * 20) + ")");
 
+			vis.legendRow.append("rect")
+				.attr("width", 10)
+				.attr("height", 10)
+				.attr("fill", place.data.color ? place.data.color : "black");
+
+			vis.legendRow.append("text")
+				.attr("x", -10)
+				.attr("y", 10)
+				.attr("text-anchor", "end")
+				.style("text-transform", "capitalize")
+                .text(place.data.nome)
+                    .attr("fill", place.data.color ? place.data.color : "black");
+	});
+}

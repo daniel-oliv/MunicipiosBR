@@ -2,7 +2,7 @@
 *    stackedAreaChart.js
 *    Source: https://bl.ocks.org/mbostock/3885211
 *    Mastering Data Visualization with D3.js
-*    FreedomCorp Dashboard
+*    
 */
 
 var svg = d3.select("svg"),

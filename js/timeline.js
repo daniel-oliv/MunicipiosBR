@@ -1,7 +1,7 @@
 /*
 *    timeline.js
 *    Mastering Data Visualization with D3.js
-*    FreedomCorp Dashboard
+*    
 */
 
 Timeline = function(_parentElement){
