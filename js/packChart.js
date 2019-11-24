@@ -28,7 +28,7 @@ PackChart.prototype.initVis = function(){
         .padding(3);
 
     //! Legend initialization
-    vis.legendX = 230;
+    vis.legendX = 100;
     vis.legendY = 20;
     vis.legend = vis.svg.append("g")
         .attr("class", "legend")
@@ -70,7 +70,7 @@ PackChart.prototype.update = function()
     //console.log(vis.root);
     
     vis.dataStates = vis.root.descendants().filter((d)=>{return !d.children})
-    console.log("vis.dataStates", vis.dataStates);
+    //console.log("vis.dataStates", vis.dataStates);
 
     // Add a group for all the descendents of the root node
     /// vis.node represents all groups since we call selectAll and enter() method
@@ -93,21 +93,16 @@ PackChart.prototype.update = function()
         // .style("stroke-width", function(d) { return d.data.color ? "1px" : "1px"; })
         // .style("stroke", function(d) { return d.data.color ? d.data.color : "black"; });
 
+    /// gNodeRootSelector
+    vis.rootSelector = vis.node.filter(function(d) { return !d.parent; });
     // Add mini donutCharts for only the leaf nodes
     vis.leaf = vis.node.filter(function(d) { return !d.children; });
     // Add mini donutCharts for only the leaf nodes
-    for (const state of vis.root.descendants()) {
-        let leafSelector = vis.leaf.filter((d)=>{return d.id === state.id});
-        let pieDt = getXYArray(state.data.qtMunCl,qtMunClKeys);
-        let arcsSelector = leafSelector.selectAll(".arc-" + state.id)
-            .data(vis.pie( pieDt ))
-            .enter().append("g")
-            .attr("class", "arc-" + state.id);
-        arcsSelector.append("path")
-            .attr("d", vis.arc(state.r))
-            .style("fill", function(d) { console.log(d.data);console.log(vis.colorPizza(d.data));return vis.colorPizza(d.data); });
-        
+    for (const state of vis.dataStates) {
+        let gSelector = vis.leaf.filter((d)=>{return d.id === state.id});
+        vis.miniPizzas(gSelector, state); 
     }
+    vis.miniPizzas(vis.rootSelector, vis.root); 
 
     // Add labels for only the leaf nodes
     vis.leaf.append("clipPath")
@@ -126,7 +121,21 @@ PackChart.prototype.update = function()
 
     // Simple tooltip
     vis.node.append("title")
-        .text(function(d) { return d.data.sigla + "\n" + formatNum(d.value) + vis.valueLegend; });
+        .text(function(d) { return d.data.sigla + "\n" + formatNum(d.data.qtMun["2010"]) + vis.valueLegend; });
+        
+}
+PackChart.prototype.miniPizzas = function(gSelector, nodeData)
+{
+    let vis = this;
+        let pieDt = getXYArray(nodeData.data.qtMunCl,qtMunClKeys);
+        let arcsSelector = gSelector.selectAll(".arc-" + nodeData.id)
+            .data(vis.pie( pieDt ))
+            .enter().append("g")
+            .attr("class", "arc-" + nodeData.id);
+        arcsSelector.append("path")
+            .attr("d", vis.arc(nodeData.r))
+            .style("fill", function(d) { //console.log(d.data);console.log(vis.colorPizza(d.data));
+                return vis.colorPizza(d.data); });
         
 }
 

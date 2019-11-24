@@ -9,8 +9,8 @@ LineChart = function(_parentElement, _data, _title = ""){
 LineChart.prototype.initVis = function(){
     var vis = this;
     
-    vis.margin = { left:60, right:50, top:30, bottom:60 };
-    vis.height = 350 - vis.margin.top - vis.margin.bottom;
+    vis.margin = { left:60, right:50, top:200, bottom:60 };
+    vis.height = 500 - vis.margin.top - vis.margin.bottom;
     vis.width = $(vis.parentElement).width() - vis.margin.left - vis.margin.right;
     //console.log(vis.width);
 
@@ -26,7 +26,7 @@ LineChart.prototype.initVis = function(){
 
     //!
     vis.legendX = vis.width;
-    vis.legendY = vis.height * 0.6;
+    vis.legendY = vis.margin.top + vis.height * 0.4;
     vis.legend = vis.svg.append("g")
         .attr("transform", "translate("+ vis.legendX +","+ vis.legendY + ")")
         .attr("width", vis.width/5)

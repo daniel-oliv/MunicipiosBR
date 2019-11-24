@@ -94,9 +94,9 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
         {
         }
     }
-    
+    //console.log("before stratify",statesAndRegions);
     country = stratifyRegion(statesAndRegions);
-    
+    //console.log("after stratify", country);
     //! summing all the years for the regions and adding colors
     for (const region of country.children) {
         region.data.color = regionColors(region.data.nome);
@@ -115,14 +115,16 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
         for (const clKey of qtMunClKeys) {
             country.data.qtMunCl[clKey] = sumArray(country.children.map(d=>{return d.data.qtMunCl[clKey];}));    
         }
+        //console.log("sumArr ", sumArray(country.children.map(d=>{return d.data.qtMun[year];})));
         country.data["qtMun"][year] = sumArray(country.children.map(d=>{return d.data.qtMun[year];}));
     }
 
-console.log("country ", country);
+    /// i can't reset cause this makes a problem in root node tootip and 
+    //resetValueParents(country, (d)=>{d.data.qtMun["2010"]=0});
+
     country
         .sum(function(d) {return d.qtMun["2010"]; })
-        .sort(function(a, b) {  
-        //console.log("sort ",(b.data.nome +" " + a.data.nome)); console.log("sort ",(b.data.qtMun["2010"] - a.data.qtMun["2010"]));
+        .sort(function(a, b) {//console.log("sort ",(b.data.nome +" " + a.data.nome)); console.log("sort ",(b.data.qtMun["2010"] - a.data.qtMun["2010"]));
             return b.data.qtMun["2010"] - a.data.qtMun["2010"]; });
     //console.log(country);
 
@@ -146,9 +148,20 @@ function getXYArray(objc, xKeys)
 }
 
 
-function mountDonutData(statesData)
+function setValueDescendants(parentElem, getValue)
 {
+    if(parentElem.children) for (const child of parentElem.children) {
+        setValueDescendants(child, getValue);
+    }
+    parentElem.value = getValue(parentElem);
+}
 
+function resetValueParents(parentElem, resetAttr)
+{
+    if(parentElem.children) for (const child of parentElem.children) {
+        resetValueParents(child, resetAttr);
+        resetAttr(parentElem);
+    }
 }
 
 function sumArray(array)
