@@ -8,7 +8,7 @@ PackChart = function(_parentElement, _data={}, _title = ""){
 
 PackChart.prototype.initVis = function(){
     var vis = this;
-    vis.width = $(vis.parentElement).width();
+    vis.width = $(vis.parentElement).width() - 100;
     vis.height = 800;
     //console.log(vis.parentElement)
     vis.svg = d3.select(vis.parentElement).append("svg")
