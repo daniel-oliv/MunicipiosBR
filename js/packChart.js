@@ -27,7 +27,15 @@ PackChart.prototype.initVis = function(){
         .size([vis.width - 2, vis.height - 2])
         .padding(3);
 
-    
+    //! Legend initialization
+    vis.legendX = 230;
+    vis.legendY = 20;
+    vis.legend = vis.svg.append("g")
+        .attr("class", "legend")
+        .attr("transform", "translate("+ vis.legendX +","+ vis.legendY + ")")
+        .attr("width", 200)
+        .attr("height", 100);
+
     vis.initPizzas();
     //console.log($(vis.parentElement).width());
     vis.update();
@@ -46,7 +54,7 @@ PackChart.prototype.initPizzas = function()
 
     vis.arc = function(outRad){
         return d3.arc()
-            .innerRadius(1)
+            .innerRadius(0)
             .outerRadius(outRad);
     }
 }
@@ -56,7 +64,7 @@ PackChart.prototype.update = function()
     var vis = this;
     vis.valueName = " Nº de municípios";
     vis.valueLegend = " municípios";
-    
+    vis.printLegend();
     // Adds an x, y, and r value to each node
     vis.root = vis.pack(vis.data);
     //console.log(vis.root);
@@ -88,7 +96,7 @@ PackChart.prototype.update = function()
     // Add mini donutCharts for only the leaf nodes
     vis.leaf = vis.node.filter(function(d) { return !d.children; });
     // Add mini donutCharts for only the leaf nodes
-    for (const state of vis.dataStates) {
+    for (const state of vis.root.descendants()) {
         let leafSelector = vis.leaf.filter((d)=>{return d.id === state.id});
         let pieDt = getXYArray(state.data.qtMunCl,qtMunClKeys);
         let arcsSelector = leafSelector.selectAll(".arc-" + state.id)
@@ -129,4 +137,27 @@ PackChart.prototype.hovered = function(hover){
         //console.log(hoveredNumMun);
         d3.selectAll(d.ancestors().map(function(d) { return d.node; })).classed("node--hover", hover);
     };
+}
+
+PackChart.prototype.printLegend = function(){
+    var vis = this;
+    vis.legend.selectAll("g").remove();
+    qtMunClKeys.forEach((label, i)=>{
+		vis.legendRow = vis.legend.append("g")
+			.attr("transform", "translate(0," + (i * 30) + ")");
+
+			vis.legendRow.append("rect")
+				.attr("width", 20)
+				.attr("height", 20)
+                .style("fill", vis.colorPizza({x:label}))
+                .style("stroke", "black");
+
+			vis.legendRow.append("text")
+				.attr("x", -20)
+				.attr("y", 20)
+				.attr("text-anchor", "end")
+                .style("text-transform", "capitalize")
+                .attr("font-size", "20px")
+                .text(label);
+	});
 }

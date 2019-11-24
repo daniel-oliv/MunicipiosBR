@@ -30,8 +30,7 @@ LineChart.prototype.initVis = function(){
     vis.legend = vis.svg.append("g")
         .attr("transform", "translate("+ vis.legendX +","+ vis.legendY + ")")
         .attr("width", vis.width/5)
-        .attr("height", vis.height/5)
-        .attr("fill", "red");
+        .attr("height", vis.height/5);
 
     // Scales
     vis.x = d3.scaleTime().range([0, vis.width]);
