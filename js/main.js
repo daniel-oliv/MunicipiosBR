@@ -26,6 +26,8 @@ var dataPromises = [d3.json("data/estados.json"), d3.json("data/regioes.json"), 
 var dataExpensePromises = [];
 var expensesCSVKeys = ["id","UF","População 2016","nome","Total da Despesa por Função per capita","Legislativa per capita","Judiciária per capita","Essencial à Justiça per capita","Administração per capita","Defesa Nacional per capita","Segurança Pública per capita","Relações Exteriores per capita","Assistência Social per capita","Previdência Social per capita","Saúde per capita","Trabalho per capita","Educação per capita","Cultura per capita","Direitos da Cidadania per capita","Urbanismo per capita","Habitação per capita","Saneamento per capita","Gestão Ambiental per capita","Ciência e Tecnologia per capita","Agricultura per capita","Organização Agrária per capita","Indústria per capita","Comércio e Serviços per capita","Comunicações per capita","Energia per capita","Transporte per capita","Desporto e Lazer per capita","Encargos Especiais per capita","TOTAL DA DESPESA POR FUNÇÃO (INTRAORÇAMENTÁRIA) per capita","TOTAL GERAL DA DESPESA POR FUNÇÃO per capita"];
 var expensesCSVNumKeys = ["id","População 2016","Total da Despesa por Função per capita","Legislativa per capita","Judiciária per capita","Essencial à Justiça per capita","Administração per capita","Defesa Nacional per capita","Segurança Pública per capita","Relações Exteriores per capita","Assistência Social per capita","Previdência Social per capita","Saúde per capita","Trabalho per capita","Educação per capita","Cultura per capita","Direitos da Cidadania per capita","Urbanismo per capita","Habitação per capita","Saneamento per capita","Gestão Ambiental per capita","Ciência e Tecnologia per capita","Agricultura per capita","Organização Agrária per capita","Indústria per capita","Comércio e Serviços per capita","Comunicações per capita","Energia per capita","Transporte per capita","Desporto e Lazer per capita","Encargos Especiais per capita","TOTAL DA DESPESA POR FUNÇÃO (INTRAORÇAMENTÁRIA) per capita","TOTAL GERAL DA DESPESA POR FUNÇÃO per capita"];
+var popKey = "População 2016";
+var qtMunClKeys = ["< 5000",">= 5000"];
 
 Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
     for (const region of regionsJSON) {
@@ -33,20 +35,17 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
     }
     Promise.all(dataExpensePromises).then(function(expensesCSVData){
     
+    let citesExpensesData = [];
     for (const region of expensesCSVData) {
         for (const city of region) {
             for (const expKey of expensesCSVNumKeys) {
                 city[expKey] = +city[expKey];
             }
+            citesExpensesData.push(city)
         }
     }
-    console.log(expensesCSVData);
-
-    for (const region of expensesCSVData) {
-        for (const state of estadosJSON) {
-            
-        }
-    } 
+   //console.log("expensesCSVData", expensesCSVData);
+   //console.log("statesExpensesData", citesExpensesData);
 
     //console.log(yearKeys);
     //console.log(estadosJSON)
@@ -56,6 +55,10 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
     let count = 0;
     for (let local of statesAndRegions) {
         local.qtMun = {};
+        local.qtMunCl = {}
+        for (const clKey of qtMunClKeys) {
+            local.qtMunCl[clKey] = 0;    
+        }
         if(local.regiao) ///for every state
         {
             for(state of numMunCSV)
@@ -70,6 +73,21 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
                 ///since the state was found, go to next
                 continue;
             }
+            //! adding another states data
+            for (const city of citesExpensesData) {
+                if(city.UF == local.sigla)
+                {
+                    for (const clKey of qtMunClKeys) {
+                        //console.log(eval(city[popKey] + clKey));
+                        if(eval(city[popKey] + clKey))
+                        {
+                            //console.log(city[popKey] + clKey);
+                            local.qtMunCl[clKey]++
+                            continue;
+                        }
+                    }
+                }
+            }
             local.regiao = null;
         }
         else
@@ -83,14 +101,20 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
     for (const region of country.children) {
         region.data.color = regionColors(region.data.nome);
         for (const year of yearKeys) {
-            // console.log(region.data.nome);
-            // console.log(region.children);
+            //console.log(region.data.nome);
+            //console.log(region.children);
+            for (const clKey of qtMunClKeys) {
+                region.data.qtMunCl[clKey] = sumArray(region.children.map(d=>{return d.data.qtMunCl[clKey];}));    
+            }
             region.data["qtMun"][year] = sumArray(region.children.map(d=>{return d.data.qtMun[year];}))
         }
     }
     //! and summing all the years for the country and adding color
     for (const year of yearKeys) {
         //countrydata.qtMun.color = "#ccff99";
+        for (const clKey of qtMunClKeys) {
+            country.data.qtMunCl[clKey] = sumArray(country.children.map(d=>{return d.data.qtMunCl[clKey];}));    
+        }
         country.data["qtMun"][year] = sumArray(country.children.map(d=>{return d.data.qtMun[year];}));
     }
 
@@ -119,6 +143,12 @@ function getXYArray(objc, xKeys)
         ret.push({x: x, y:objc[x]})
     }
     return ret;
+}
+
+
+function mountDonutData(statesData)
+{
+
 }
 
 function sumArray(array)

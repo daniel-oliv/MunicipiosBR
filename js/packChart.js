@@ -10,7 +10,7 @@ PackChart.prototype.initVis = function(){
     var vis = this;
     vis.width = $(vis.parentElement).width();
     vis.height = 800;
-    console.log(vis.parentElement)
+    //console.log(vis.parentElement)
     vis.svg = d3.select(vis.parentElement).append("svg")
         .attr("width", vis.width)
         .attr("height", vis.height);
@@ -39,7 +39,16 @@ PackChart.prototype.initPizzas = function()
     var vis = this;
     vis.pie = d3.pie()
         .sort(null)
-        .value(function(d) { return d; });
+        .value(function(d) { return d.y; });
+
+    vis.colorPizza = function(d){return d.x === qtMunClKeys[0] ? "grey" : "white";};
+    //console.log(vis.colorPizza({x:qtMunClKeys[0] , y:4000}))
+
+    vis.arc = function(outRad){
+        return d3.arc()
+            .innerRadius(1)
+            .outerRadius(outRad);
+    }
 }
 
 PackChart.prototype.update = function()
@@ -47,9 +56,13 @@ PackChart.prototype.update = function()
     var vis = this;
     vis.valueName = " Nº de municípios";
     vis.valueLegend = " municípios";
+    
     // Adds an x, y, and r value to each node
     vis.root = vis.pack(vis.data);
     //console.log(vis.root);
+    
+    vis.dataStates = vis.root.descendants().filter((d)=>{return !d.children})
+    console.log("vis.dataStates", vis.dataStates);
 
     // Add a group for all the descendents of the root node
     /// vis.node represents all groups since we call selectAll and enter() method
@@ -62,8 +75,8 @@ PackChart.prototype.update = function()
         .each(function(d) { /*console.log(this);*/d.node = this; })
         .on("mouseover", vis.hovered(true))
         .on("mouseout", vis.hovered(false));
-    console.log("svg", vis.svg);
-    console.log("node", vis.node);
+    //console.log("svg", vis.svg);
+    
     // Append a circle to each node.
     vis.node.append("circle")
         .attr("id", function(d) { return "node-" + d.id; })
@@ -72,9 +85,23 @@ PackChart.prototype.update = function()
         // .style("stroke-width", function(d) { return d.data.color ? "1px" : "1px"; })
         // .style("stroke", function(d) { return d.data.color ? d.data.color : "black"; });
 
-    // Add labels for only the leaf nodes
+    // Add mini donutCharts for only the leaf nodes
     vis.leaf = vis.node.filter(function(d) { return !d.children; });
+    // Add mini donutCharts for only the leaf nodes
+    for (const state of vis.dataStates) {
+        let leafSelector = vis.leaf.filter((d)=>{return d.id === state.id});
+        let pieDt = getXYArray(state.data.qtMunCl,qtMunClKeys);
+        let arcsSelector = leafSelector.selectAll(".arc-" + state.id)
+            .data(vis.pie( pieDt ))
+            .enter().append("g")
+            .attr("class", "arc-" + state.id);
+        arcsSelector.append("path")
+            .attr("d", vis.arc(state.r))
+            .style("fill", function(d) { console.log(d.data);console.log(vis.colorPizza(d.data));return vis.colorPizza(d.data); });
+        
+    }
 
+    // Add labels for only the leaf nodes
     vis.leaf.append("clipPath")
         .attr("id", function(d) { return "clip-" + d.id; })
         .append("use")
@@ -92,13 +119,7 @@ PackChart.prototype.update = function()
     // Simple tooltip
     vis.node.append("title")
         .text(function(d) { return d.data.sigla + "\n" + formatNum(d.value) + vis.valueLegend; });
-    
-        // vis.Pizzas = [];
-    // vis.leaf
-    //     .each((d)=>{
-    //         //console.log("parent inside here", vis.parentElement)
-    //         vis.Pizzas.push(new PizzaChart(vis.parentElement.toString(), d));})
-    
+        
 }
 
 PackChart.prototype.hovered = function(hover){
