@@ -22,7 +22,8 @@ BoxPlot.prototype.initVis = function(){
         .attr("transform", "translate(" + vis.margin.left + ", " + vis.margin.top + ")");
 
     // Show the Y scale
-    vis.y = d3.scaleLinear().range([vis.height, 0]);
+    vis.yMax = 0;
+    vis.y = d3.scaleLinear().range([vis.height, vis.yMax]);
 
     // Axis generators
     //vis.xAxisCall = d3.axisBottom().ticks(7);
@@ -34,6 +35,14 @@ BoxPlot.prototype.initVis = function(){
         .attr("transform", "translate(0," + vis.height + ")");
     vis.yAxis = vis.g.append("g")
         .attr("class", "y axis");
+
+    vis.r = 2;
+    vis.lineBoxHeight = vis.r*2;
+    vis.boxWidth = vis.width;
+    /// using left since  y(d) will be a stream in descending order (height to 0 px)
+    vis.bisector = d3.bisector(function(d) { return vis.y(d[selecBoxKey]) }).right; 
+
+    vis.t = function(){ return d3.transition().duration(500); }
     
     // vis.frame = vis.svg.append("circle")
     //     .attr("class", "frame")
@@ -44,4 +53,61 @@ BoxPlot.prototype.initVis = function(){
     //     .attr("width", vis.width*0.9);
 
     console.log(vis.svg);
+    vis.updateVis();
+}
+
+BoxPlot.prototype.updateVis = function(){
+    let vis = this;
+
+    vis.y.domain([d3.min(vis.data, function(d){ console.log(d);return vis.y(d[selecBoxKey]); }) / 1.005, 
+            d3.max(vis.data, function(d){ return vis.y(d[selecBoxKey]); }) * 1.005]);
+
+    vis.yAxisCall.scale(vis.y);
+        vis.yAxis.transition(vis.t()).call(vis.yAxisCall.tickFormat(formatMoney));
+
+    vis.setXData();
+
+    vis.circles =vis.g.selectAll(".circle-box")
+        .data(vis.data, vis.data.id);
+    
+    vis.circles.exit().remove();
+    vis.circles = vis.circles
+        .enter()
+        .append("circle")
+            .attr("class", "circle-box")
+            .attr("r", vis.r)
+            .attr("stroke", "black")
+            .style("fill", "green")
+        .merge(vis.circles)
+        
+        vis.circles
+            .transition(vis.t)
+            .attr("cx", function(d){d.x})
+            .attr("cy", function(d){return vis.y(d[selecBoxKey] );})
+}
+
+BoxPlot.prototype.setXData = function(){
+    let vis = this;
+    let rollUpIa = 0;
+
+    for (let clUpLim = vis.height - vis.lineBoxHeight; ; clUpLim -= vis.lineBoxHeight) {
+        if(clUpLim > vis.yMax)
+        {
+            clUpLim = vis.yMax;
+        }
+        let rollUpI  = vis.bisector(vis.data, clUpLim);
+        let lineData = vis.data.slice(rollUpIa, rollUpI);
+        rollUpIa = rollUpI;
+        let step = vis.boxWidth / lineData.length;
+        let xa = vis.x1Box;
+        for(d of lineData)
+        {
+            d.x = xa + step;
+            xa = d.x;
+        }
+        if(clUpLim === vis.yMax)
+        {
+           break;
+        }
+    }
 }

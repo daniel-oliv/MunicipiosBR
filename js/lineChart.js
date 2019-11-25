@@ -75,11 +75,11 @@ LineChart.prototype.update = function()
 
     vis.printLegend();
 
-    vis.yMax = d3.max(hoveredNumMun.slice(0,2).map(d=>{return d.data.qtMun["2010"];}));
-    //console.log(vis.yMax);
+    vis.yDmax = d3.max(hoveredNumMun.slice(0,2).map(d=>{return d.data.qtMun["2010"];}));
+    //console.log(vis.yDmax);
     vis.x.domain(d3.extent(vis.data, function(d){ return timeParseYear(d.x) ; }));
-    vis.y.domain([0, vis.yMax]);
-    // vis.y.domain([d3.min(vis.data, function(d){ return d.y; }) / 1.005, 
+    vis.y.domain([0, vis.yDmax]);
+    // vis.y.domain([d3.min(vis.data, function(d){ return d[selectedAttribute]; }) / 1.005, 
     //     d3.max(vis.data, function(d){ return d[selectedAttribute]; }) * 1.005]);
 
     vis.xAxisCall.scale(vis.x);
