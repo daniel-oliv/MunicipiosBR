@@ -14,28 +14,57 @@ BoxPlot.prototype.initVis = function(){
     vis.width = $(vis.parentElement).width() - vis.margin.left - vis.margin.right;
     //console.log(vis.width);
 
-    vis.stShowDiv = d3.select(vis.parentElement).append("div");
-    vis.slCount = 1;
-    let slNum = vis.slCount;
-    vis.st = vis.stShowDiv.append("select")
-        .attr("name", "region-"+vis.slCount)
-        .on("change", ()=>{vis.onChangeRg(slNum)});
+    vis.stSelecToolDiv = d3.select("#selec-tools-div");
+    //! region select
+    vis.stRegion = vis.stSelecToolDiv.append("select")
+        .attr("id", "region-select")
+        .attr("name", "region")
+        .on("change", ()=>{vis.onChangeRg()});
     
     vis.rgDefaultOp=[{data:{nome:"Região", sigla:"any"} }]; 
 
-    vis.options = vis.st.selectAll("option")
-        .data(vis.rgDefaultOp.concat(regionsData), function(d){console.log("d ", d); return d.data.sigla})
+    vis.options = vis.stRegion.selectAll("option")
+        .data(vis.rgDefaultOp.concat(regionsData), function(d){ return d.data.sigla})
         .enter()
-        .append("option");
+        .append("option")
+        .text(function(d) {return d.data.nome;})
+        .attr("value", function(d) {return d.data.sigla;});
 
-    vis.options.text(function(d) {
-        return d.data.nome;
-            })
-            .attr("value", function(d) {
-        return d.data.sigla;
-    });
-    vis.slCount++;
+    //! state select
+    vis.stState = vis.stSelecToolDiv.append("select")
+        .attr("id", "state-select")
+        .attr("name", "state")
+        .on("change", ()=>{vis.onChangeRg()});
 
+    vis.stateDefaultOp=[{data:{nome:"Estado", sigla:"any"} }]; 
+
+    vis.options = vis.stState.selectAll("option")
+        .data(vis.stateDefaultOp.concat(statesData), function(d){ return d.data.sigla})
+        .enter()
+        .append("option")
+        .text(function(d) {return d.data.nome;})
+        .attr("value", function(d) {return d.data.sigla;});
+
+    //!Attribute select
+    vis.stSelecToolDiv.append("br")
+    vis.stSelecToolDiv.append("br")
+    vis.stAttr = vis.stSelecToolDiv.append("select")
+        .attr("id", "attr-select")
+        .attr("name", "attribute")
+
+    vis.attrDefaultOp=["Atributo"]; 
+
+    vis.options = vis.stAttr.selectAll("option")
+        .data(vis.attrDefaultOp.concat(attrToSelect))
+        .enter()
+        .append("option")
+        .text(function(d) {return d;})
+        .attr("value", function(d) {return d;});
+
+    vis.inInterval = vis.stSelecToolDiv.append("input")
+        .attr("id", "interval-input")
+
+    //! svg for vizualization
     vis.svg = d3.select(vis.parentElement)
             .append("svg")
             .attr("width", vis.width + vis.margin.left + vis.margin.right)
@@ -124,7 +153,7 @@ BoxPlot.prototype.onChangeSt = function() {
     console.log("onChangeSt ")
 };
 
-BoxPlot.prototype.setXData = function(){
+BoxPlot.prototype.initFilterFields = function(){
 
 }
 
@@ -212,3 +241,26 @@ BoxPlot.prototype.setMostDistantX = function(lineData)
         xa = d.x;
     }
 }
+
+///for show selects that can be added continuous
+// vis.stShowDiv = d3.select(vis.parentElement).append("div");
+// vis.slCount = 1;
+// let slNum = vis.slCount;
+// vis.st = vis.stShowDiv.append("select")
+//     .attr("name", "region-"+vis.slCount)
+//     .on("change", ()=>{vis.onChangeRg(slNum)});
+
+// vis.rgDefaultOp=[{data:{nome:"Região", sigla:"any"} }]; 
+
+// vis.options = vis.st.selectAll("option")
+//     .data(vis.rgDefaultOp.concat(regionsData), function(d){console.log("d ", d); return d.data.sigla})
+//     .enter()
+//     .append("option");
+
+// vis.options.text(function(d) {
+//     return d.data.nome;
+//         })
+//         .attr("value", function(d) {
+//     return d.data.sigla;
+// });
+// vis.slCount++;
