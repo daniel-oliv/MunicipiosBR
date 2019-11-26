@@ -136,7 +136,7 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
     console.log("country ", country);
     statesData = country.descendants().filter((d)=>{return !d.children});
     regionsData = country.children;
-
+    console.log("regionsData ", regionsData);
     hoveredNumMun = [];
     hoveredNumMun.push(country);
 

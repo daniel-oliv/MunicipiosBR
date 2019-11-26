@@ -13,7 +13,29 @@ BoxPlot.prototype.initVis = function(){
     vis.height = 1800 - vis.margin.top - vis.margin.bottom;
     vis.width = $(vis.parentElement).width() - vis.margin.left - vis.margin.right;
     //console.log(vis.width);
+
+    vis.stShowDiv = d3.select(vis.parentElement).append("div");
+    vis.slCount = 1;
+    let slNum = vis.slCount;
+    vis.st = vis.stShowDiv.append("select")
+        .attr("name", "region-"+vis.slCount)
+        .on("change", ()=>{vis.onChangeRg(slNum)});
     
+    vis.rgDefaultOp=[{data:{nome:"Região", sigla:"any"} }]; 
+
+    vis.options = vis.st.selectAll("option")
+        .data(vis.rgDefaultOp.concat(regionsData), function(d){console.log("d ", d); return d.data.sigla})
+        .enter()
+        .append("option");
+
+    vis.options.text(function(d) {
+        return d.data.nome;
+            })
+            .attr("value", function(d) {
+        return d.data.sigla;
+    });
+    vis.slCount++;
+
     vis.svg = d3.select(vis.parentElement)
             .append("svg")
             .attr("width", vis.width + vis.margin.left + vis.margin.right)
@@ -93,9 +115,18 @@ BoxPlot.prototype.updateVis = function(){
             .attr("cy", function(d){return vis.y(d[selecBoxKey] );})
 }
 
+BoxPlot.prototype.onChangeRg = function(slNum) {
+    console.log("onChangeRg ", slNum);
+
+};
+
 BoxPlot.prototype.onChangeSt = function() {
     console.log("onChangeSt ")
 };
+
+BoxPlot.prototype.setXData = function(){
+
+}
 
 BoxPlot.prototype.setXData = function(){
     let vis = this;
@@ -125,8 +156,8 @@ BoxPlot.prototype.setCentralX = function(lineData)
 {
     //console.log("lineData ", lineData.length)
     let vis = this;
-    let step = vis.boxWidth / (lineData.length-1);
-    //let step = vis.r*3;
+    //let step = vis.boxWidth / (lineData.length-1);
+    let step = vis.r*2.5;
     let actualRange = 0;
     let centralX =  vis.x1Box + vis.boxWidth / 2;
     let i = 0;
