@@ -127,7 +127,7 @@ PackChart.prototype.update = function()
 PackChart.prototype.miniPizzas = function(gSelector, nodeData)
 {
     let vis = this;
-        let pieDt = getXYArray(nodeData.data.qtMunCl,qtMunClKeys);
+        let pieDt = getXYArray(nodeData.data.qtMunClCount,qtMunClKeys);
         let arcsSelector = gSelector.selectAll(".arc-" + nodeData.id)
             .data(vis.pie( pieDt ))
             .enter().append("g")

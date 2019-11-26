@@ -58,9 +58,9 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
     let count = 0;
     for (let local of statesAndRegions) {
         local.qtMun = {};
-        local.qtMunCl = {}
+        local.qtMunClCount = {}
         for (const clKey of qtMunClKeys) {
-            local.qtMunCl[clKey] = 0;    
+            local.qtMunClCount[clKey] = 0;    
         }
         if(local.regiao) ///for every state
         {
@@ -85,8 +85,8 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
                         if(eval(city[popKey] + clKey))
                         {
                             //console.log(city[popKey] + clKey);
-                            local.qtMunCl[clKey]++
-                            continue;
+                            local.qtMunClCount[clKey]++
+                            break;
                         }
                     }
                 }
@@ -107,7 +107,7 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
             //console.log(region.data.nome);
             //console.log(region.children);
             for (const clKey of qtMunClKeys) {
-                region.data.qtMunCl[clKey] = sumArray(region.children.map(d=>{return d.data.qtMunCl[clKey];}));    
+                region.data.qtMunClCount[clKey] = sumArray(region.children.map(d=>{return d.data.qtMunClCount[clKey];}));    
             }
             region.data["qtMun"][year] = sumArray(region.children.map(d=>{return d.data.qtMun[year];}))
         }
@@ -116,7 +116,7 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
     for (const year of yearKeys) {
         //countrydata.qtMun.color = "#ccff99";
         for (const clKey of qtMunClKeys) {
-            country.data.qtMunCl[clKey] = sumArray(country.children.map(d=>{return d.data.qtMunCl[clKey];}));    
+            country.data.qtMunClCount[clKey] = sumArray(country.children.map(d=>{return d.data.qtMunClCount[clKey];}));    
         }
         //console.log("sumArr ", sumArray(country.children.map(d=>{return d.data.qtMun[year];})));
         country.data["qtMun"][year] = sumArray(country.children.map(d=>{return d.data.qtMun[year];}));
@@ -127,7 +127,7 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
 
     country
         .sum(function(d) {return d.qtMun["2010"]; })
-        .sort(function(a, b) {//console.log("sort ",(b.data.nome +" " + a.data.nome)); console.log("sort ",(b.data.qtMun["2010"] - a.data.qtMun["2010"]));
+        .sort(function(a, b) {//console.log("sort ",(b.data.nome +" " + a.data.nome));console.log("sort ",(b.data.qtMun["2010"] - a.data.qtMun["2010"]));
             return b.data.qtMun["2010"] - a.data.qtMun["2010"]; });
     //console.log(country);
 
@@ -155,6 +155,17 @@ function getXYArray(objc, xKeys)
         ret.push({x: x, y:objc[x]})
     }
     return ret;
+}
+
+function rollUpValidAndUnvalid(_data, isValidFunction)
+{
+    let validArray = [], unvalidArray = [];
+
+    for (const item of _data) {
+        if(isValidFunction(item)) validArray.push(item);
+        else unvalidArray.push(item);
+    }
+    return [validArray, isValidFunction];
 }
 
 function getQuantis(_data, attrKey)
