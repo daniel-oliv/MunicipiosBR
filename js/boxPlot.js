@@ -9,22 +9,18 @@ BoxPlot = function(_parentElement, _data, _title = ""){
 
 BoxPlot.prototype.initVis = function(){
     let vis = this;
-    vis.margin = { left:60, right:50, top:200, bottom:60 };
+    vis.margin = { left:60, right:50, top:100, bottom:60 };
     vis.height = 1800 - vis.margin.top - vis.margin.bottom;
     vis.width = $(vis.parentElement).width() - vis.margin.left - vis.margin.right;
     //console.log(vis.width);
-
+    
     vis.svg = d3.select(vis.parentElement)
             .append("svg")
             .attr("width", vis.width + vis.margin.left + vis.margin.right)
-            .attr("height", vis.height + vis.margin.top + vis.margin.bottom);
-    
+            .attr("height", vis.height + vis.margin.top + vis.margin.bottom);    
+
     vis.g = vis.svg.append("g")
         .attr("transform", "translate(" + vis.margin.left + ", " + vis.margin.top + ")");
-
-    // Show the Y scale
-    vis.yMax = 0;
-    vis.y = d3.scaleLog().range([vis.height, vis.yMax]);
 
     // Axis generators
     //vis.xAxisCall = d3.axisBottom().ticks(7);
@@ -39,7 +35,7 @@ BoxPlot.prototype.initVis = function(){
     vis.yAxis = vis.g.append("g")
         .attr("class", "y axis");
 
-    vis.r = 2;
+    vis.r = 2.5;
     vis.lineBoxHeight = vis.r*2;
     vis.boxWidth = vis.width;
     vis.x1Box = 0;
@@ -65,6 +61,10 @@ BoxPlot.prototype.updateVis = function(){
 
     [vis.validData,  vis.unvalidData] = rollUpValidAndUnvalid(vis.data, (d)=>{return d[selecBoxKey] > 0;});
     console.log("vis.validData", vis.validData);
+
+    // Show the Y scale
+    vis.yMax = 0;
+    vis.y = d3.scaleLog().range([vis.height, vis.yMax]);
     vis.y.domain([d3.min(vis.validData, function(d){ //console.log("d3.min y ", d);
                             return d[selecBoxKey]; }) / 1.005, 
             d3.max(vis.validData, function(d){ return d[selecBoxKey]; }) * 1.005]);
@@ -82,16 +82,20 @@ BoxPlot.prototype.updateVis = function(){
         .enter()
         .append("circle")
             .attr("class", "circle-box")
-            .attr("r", vis.r)
-            .attr("stroke", "black")
-            .style("fill", "green")
         .merge(vis.circles)
         
         vis.circles
             .transition(vis.t)
+            .attr("r", vis.r)
+            //.attr("stroke", "black")
+            .style("fill", "green")
             .attr("cx", function(d){return d.x;})
             .attr("cy", function(d){return vis.y(d[selecBoxKey] );})
 }
+
+BoxPlot.prototype.onChangeSt = function() {
+    console.log("onChangeSt ")
+};
 
 BoxPlot.prototype.setXData = function(){
     let vis = this;
@@ -107,17 +111,73 @@ BoxPlot.prototype.setXData = function(){
         let rollUpI  = vis.bisector(attrArray, vis.y.invert(clUpLim));
         let lineData = vis.validData.slice(rollUpIa, rollUpI);
         rollUpIa = rollUpI;
-        let step = vis.boxWidth / lineData.length;
-        let xa = vis.x1Box;
-        for(d of lineData)
-        {
-            d.x = xa + step;
-            xa = d.x;
-        }
+        //console.log("lineData ", lineData);
+        vis.setCentralX(lineData)
         //console.log("lineData ", lineData)
         if(clUpLim === vis.yMax)
         {
            break;
         }
+    }  
+}
+
+BoxPlot.prototype.setCentralX = function(lineData)
+{
+    //console.log("lineData ", lineData.length)
+    let vis = this;
+    let step = vis.boxWidth / (lineData.length-1);
+    //let step = vis.r*3;
+    let actualRange = 0;
+    let centralX =  vis.x1Box + vis.boxWidth / 2;
+    let i = 0;
+    if(lineData.length % 2 != 0)
+    {
+        lineData[i].x = centralX;
+        i++;
+    }
+
+    for (; i < lineData.length; i+=2) {
+        //console.log("i ", i);
+        actualRange+=step;
+       //console.log("i ", i);
+        lineData[i].x = centralX + actualRange;
+        lineData[i+1].x = centralX - actualRange;     
+    }
+}
+
+BoxPlot.prototype.setRandomX = function(lineData)
+{
+    //console.log("lineData ", lineData.length)
+    let vis = this; 
+    let step = vis.boxWidth / (lineData.length-1);
+    //let step = vis.r*3;
+    let actualRange = 0;
+    let centralX =  vis.x1Box + vis.boxWidth / 2;
+    let i = 0;
+    if(lineData.length % 2 != 0)
+    {
+        //console.log("is odd length i ", i)
+        lineData[i].x = centralX;
+        i++;
+    }
+
+    for (; i < lineData.length; i+=2) {
+        //console.log("i ", i);
+        actualRange+=step;
+       //console.log("i ", i);
+        lineData[i].x = centralX + actualRange;
+        lineData[i+1].x = centralX - actualRange;     
+    }
+}
+
+BoxPlot.prototype.setMostDistantX = function(lineData)
+{
+    let vis = this;
+    let step = vis.boxWidth / lineData.length;
+    let xa = vis.x1Box;
+    for(d of lineData)
+    {
+        d.x = xa + step;
+        xa = d.x;
     }
 }

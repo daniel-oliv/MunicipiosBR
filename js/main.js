@@ -4,7 +4,11 @@
 */
 let startTime = performance.now()
 
+let stState = "stState", selectRegion = "stRegion";
+
 let country;
+let regionsData;
+let statesData;
 let hoveredNumMun;
 var yearKeys = ["1950","1960","1970","1980","1991","2000","2010"];
 
@@ -17,7 +21,7 @@ var timeParseYear = d3.timeParse("%Y");
 var timeFormatYear = d3.timeFormat("%Y");
 
 var formatNum = d3.format(".0f");
-let formatMoney = d3.format("$");
+let formatMoney = d3.format("$,.0f");
 
 let regionColors = d3.scaleOrdinal(d3.schemeSet1);
 
@@ -129,7 +133,9 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
         .sum(function(d) {return d.qtMun["2010"]; })
         .sort(function(a, b) {//console.log("sort ",(b.data.nome +" " + a.data.nome));console.log("sort ",(b.data.qtMun["2010"] - a.data.qtMun["2010"]));
             return b.data.qtMun["2010"] - a.data.qtMun["2010"]; });
-    //console.log(country);
+    console.log("country ", country);
+    statesData = country.descendants().filter((d)=>{return !d.children});
+    regionsData = country.children;
 
     hoveredNumMun = [];
     hoveredNumMun.push(country);

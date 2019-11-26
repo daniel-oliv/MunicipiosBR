@@ -67,7 +67,7 @@ PackChart.prototype.update = function()
     vis.printLegend();
     // Adds an x, y, and r value to each node
     vis.root = vis.pack(vis.data);
-    //console.log(vis.root);
+    console.log("root ", vis.root);
     
     vis.dataStates = vis.root.descendants().filter((d)=>{return !d.children})
     //console.log("vis.dataStates", vis.dataStates);
