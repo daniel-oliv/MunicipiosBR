@@ -34,7 +34,7 @@ BoxPlot.prototype.initVis = function(){
     vis.stState = vis.stSelecToolDiv.append("select")
         .attr("id", "state-select")
         .attr("name", "state")
-        .on("change", ()=>{vis.onChangeRg()});
+        .on("change", ()=>{vis.onChangeSt()});
 
     vis.stateDefaultOp=[{data:{nome:"Estado", sigla:"any"} }]; 
 
@@ -51,6 +51,8 @@ BoxPlot.prototype.initVis = function(){
     vis.stAttr = vis.stSelecToolDiv.append("select")
         .attr("id", "attr-select")
         .attr("name", "attribute")
+        .attr("class", "form-control")
+        .on("change", ()=>{vis.onChangeAttr()});;
 
     vis.attrDefaultOp=["Atributo"]; 
 
@@ -63,6 +65,8 @@ BoxPlot.prototype.initVis = function(){
 
     vis.inInterval = vis.stSelecToolDiv.append("input")
         .attr("id", "interval-input")
+        .attr("placeHolder", "Insira os intervalos no formato: 5000;5000:10000;10000")
+        .attr("class", "form-control");
 
     //! svg for vizualization
     vis.svg = d3.select(vis.parentElement)
@@ -111,6 +115,8 @@ BoxPlot.prototype.updateVis = function(){
     let vis = this;
 
     [vis.validData,  vis.unvalidData] = rollUpValidAndUnvalid(vis.data, (d)=>{return d[selecBoxKey] > 0;});
+    vis.filterData();
+
     console.log("vis.validData", vis.validData);
 
     // Show the Y scale
@@ -144,13 +150,52 @@ BoxPlot.prototype.updateVis = function(){
             .attr("cy", function(d){return vis.y(d[selecBoxKey] );})
 }
 
-BoxPlot.prototype.onChangeRg = function(slNum) {
-    console.log("onChangeRg ", slNum);
+BoxPlot.prototype.filterData = function()
+{
+    vis = this;
+    
+    
+    vis.previousData = vis.filteredData;
+    
+}
+
+BoxPlot.prototype.onChangeRg = function() {
+    console.log("onChangeRg ");
+    console.log($("#region-select").val());
+    this.onChangeSt();
 
 };
 
 BoxPlot.prototype.onChangeSt = function() {
-    console.log("onChangeSt ")
+    let vis = this;
+    let selecRegion = $("#region-select").val();
+    
+    console.log("onChangeSt selecRegion ", selecRegion)
+
+    let filterStates;
+    if( selecRegion === "any")
+    {   
+        console.log("any region")
+        filterStates = statesData;
+    }
+    else
+    {
+        filterStates = statesData.filter((d)=>{ return (d.data.regiao === selecRegion);});
+    }
+    console.log("filterStates ", filterStates)
+    console.log("stateDefaultOp ", vis.stateDefaultOp[0].data)
+    vis.stState.selectAll("option")
+        .data(vis.stateDefaultOp.concat(filterStates), function(d){ return d.data.sigla});
+    console.log("vis.stState.exit() ", vis.stState.exit())
+    //     vis.stState.exit().remove();
+    // vis.stState.enter()
+    //     .append("option")
+    //     .text(function(d) {return d.data.nome;})
+    //     .attr("value", function(d) {return d.data.sigla;});;
+};
+
+BoxPlot.prototype.onChangeAttr = function() {
+    console.log("onChangeAttr ")
 };
 
 BoxPlot.prototype.initFilterFields = function(){

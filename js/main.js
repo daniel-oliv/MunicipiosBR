@@ -96,7 +96,7 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
                     }
                 }
             }
-            local.regiao = null;
+            local.regiao = local.regiao.sigla;
         }
         else
         {
