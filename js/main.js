@@ -85,6 +85,8 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
             for (const city of citesExpensesData) {
                 if(city.UF == local.sigla)
                 {
+                    //! adding region to the expensesData
+                    city.regiao = local.regiao.sigla;
                     for (const clKey of qtMunClKeys) {
                         //console.log(eval(city[popKey] + clKey));
                         if(eval(city[popKey] + clKey))

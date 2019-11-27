@@ -69,7 +69,7 @@ BoxPlot.prototype.initVis = function(){
         .attr("class", "form-control");
 
     d3.select("#keepBt")
-        .on("onclick", vis.clKeep)
+        .on("click", ()=>vis.clKeep(vis))
 
     //! svg for vizualization
     vis.svg = d3.select(vis.parentElement)
@@ -92,11 +92,21 @@ BoxPlot.prototype.initVis = function(){
         .attr("transform", "translate(0," + vis.height + ")");
     vis.yAxis = vis.g.append("g")
         .attr("class", "y axis")
-        .attr("transform", "translate("-vis.margin.left/2 + "," + vis.height + ")");
+        .attr("transform", "translate("+(-0) + ",0)");
+
+    // Y-Axis label
+    vis.g.append("text")
+    .attr("class", "y axisLabel")
+    .attr("transform", "rotate(-90)")
+    .attr("y", -40)
+    .attr("x", -vis.height/2)
+    .attr("font-size", "20px")
+    .style("text-anchor", "middle")
+    .text("Nº de municípios");
 
     vis.r = 2.5;
     vis.lineBoxHeight = vis.r*2;
-    vis.boxWidth = vis.width;
+    vis.boxWidth = vis.width-200;
     vis.x1Box = 0;
     /// using left since  y(d) will be a stream in descending order (height to 0 px)
     vis.bisector = d3.bisector(function(d) { return d }).right; 
@@ -112,15 +122,16 @@ BoxPlot.prototype.initVis = function(){
     //     .attr("width", vis.width*0.9);
 
     
-    vis.filterData = vis.data;
-    //console.log(vis.svg);
+    vis.filteredData = vis.data;
+    console.log("filteredData", vis.filteredData);
     vis.updateVis();
 }
 
 BoxPlot.prototype.updateVis = function(){
     let vis = this;
-    [vis.validData,  vis.unvalidData] = rollUpValidAndUnvalid(vis.filterData, (d)=>{return d[selecBoxKey] > 0;});
+    [vis.validData,  vis.unvalidData] = rollUpValidAndUnvalid(vis.filteredData, (d)=>{return d[selecBoxKey] > 0;});
     console.log("vis.validData", vis.validData);
+    console.log("update vis.filteredData", vis.filteredData);
 
     // Show the Y scale
     vis.yMax = 0;
@@ -162,42 +173,49 @@ BoxPlot.prototype.filterData = function()
     
 }
 
-BoxPlot.prototype.clKeep = function() {
+BoxPlot.prototype.clKeep = function(vis) {
     console.log("clKeep ");
-    vis = this;
-
-    vis.previousData = vis.filterData;
-    vis.validData = [];
-    let selecRegion = $("#region-select").val();
-    let selecState = $("#region-select").val();
-
+    //let vis = this;
     
+    console.log("vis.filteredData ", vis.filteredData);
+    vis.previousData = vis.filteredData.concat();
+    console.log("vis.previousData ", vis.previousData);
+    vis.filteredData = [];
+    let selecRegion = $("#region-select").val();
+    let selecState = $("#state-select").val();
+    let isRgSelected = selecRegion != "any";
+    let isStSelected = selecState != "any";
 
-    // let validate
-    // if(selecState =! "any")
-    // {}
-    // else if(selecState)
-    // for (const city of previousData) {
-        
-    //     for (const iterator of object) {
-            
-    //     }
-    // }
-
+    /// it does not make sense use previous location-filtered data to filter action
+    for (const city of vis.data) {
+        if(isStSelected)
+        {
+            if(city.UF === selecState)
+            {
+                console.log("adding ", city);
+                vis.filteredData.push(city);
+            }
+        }
+        else if(isRgSelected)
+        {
+            if(city.regiao === selecRegion)
+            {
+                vis.filteredData.push(city);
+            }
+        }
+    }
+    console.log("filteredData ", vis.filteredData);
+    vis.updateVis();
 
 };
 
 BoxPlot.prototype.onChangeRg = function() {
-    console.log("onChangeRg ");
-    console.log($("#region-select").val());
-    this.onChangeSt();
-
-};
-
-BoxPlot.prototype.onChangeSt = function() {
     let vis = this;
+
+    console.log("onChangeRg ");
     let selecRegion = $("#region-select").val();
-    
+    console.log($("#region-select").val());
+
     console.log("onChangeSt selecRegion ", selecRegion)
 
     let filterStates;
@@ -217,6 +235,16 @@ BoxPlot.prototype.onChangeSt = function() {
         .append("option")
         .text(function(d) {return d.data.nome;})
         .attr("value", function(d) {return d.data.sigla;});    
+
+    this.onChangeSt();
+
+};
+
+BoxPlot.prototype.onChangeSt = function() {
+    let vis = this;
+    
+    
+    
 };
 
 BoxPlot.prototype.onChangeAttr = function() {
@@ -260,10 +288,10 @@ BoxPlot.prototype.setCentralX = function(lineData)
 {
     //console.log("lineData ", lineData.length)
     let vis = this;
-    //let step = vis.boxWidth / (lineData.length-1);
-    let step = vis.r*2.5;
+    let step = vis.boxWidth / (lineData.length-1);
+    //let step = vis.r*2.5;
     let actualRange = 0;
-    let centralX =  vis.x1Box + vis.boxWidth / 2;
+    let centralX = vis.margin.left + (vis.x1Box + vis.width) / 2;
     let i = 0;
     if(lineData.length % 2 != 0)
     {
