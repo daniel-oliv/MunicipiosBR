@@ -52,7 +52,7 @@ BoxPlot.prototype.initVis = function(){
         .attr("id", "attr-select")
         .attr("name", "attribute")
         .attr("class", "form-control")
-        .on("change", ()=>{vis.onChangeAttr()});;
+        .on("change", ()=>{vis.onChangeAttr()});
 
     vis.attrDefaultOp=["Atributo"]; 
 
@@ -67,6 +67,9 @@ BoxPlot.prototype.initVis = function(){
         .attr("id", "interval-input")
         .attr("placeHolder", "Insira os intervalos no formato: 5000;5000:10000;10000")
         .attr("class", "form-control");
+
+    d3.select("#keepBt")
+        .on("onclick", vis.clKeep)
 
     //! svg for vizualization
     vis.svg = d3.select(vis.parentElement)
@@ -88,7 +91,8 @@ BoxPlot.prototype.initVis = function(){
         .attr("class", "x axis")
         .attr("transform", "translate(0," + vis.height + ")");
     vis.yAxis = vis.g.append("g")
-        .attr("class", "y axis");
+        .attr("class", "y axis")
+        .attr("transform", "translate("-vis.margin.left/2 + "," + vis.height + ")");
 
     vis.r = 2.5;
     vis.lineBoxHeight = vis.r*2;
@@ -107,16 +111,15 @@ BoxPlot.prototype.initVis = function(){
     //     .attr("height", vis.height*0.9)
     //     .attr("width", vis.width*0.9);
 
+    
+    vis.filterData = vis.data;
     //console.log(vis.svg);
     vis.updateVis();
 }
 
 BoxPlot.prototype.updateVis = function(){
     let vis = this;
-
-    [vis.validData,  vis.unvalidData] = rollUpValidAndUnvalid(vis.data, (d)=>{return d[selecBoxKey] > 0;});
-    vis.filterData();
-
+    [vis.validData,  vis.unvalidData] = rollUpValidAndUnvalid(vis.filterData, (d)=>{return d[selecBoxKey] > 0;});
     console.log("vis.validData", vis.validData);
 
     // Show the Y scale
@@ -125,7 +128,7 @@ BoxPlot.prototype.updateVis = function(){
     vis.y.domain([d3.min(vis.validData, function(d){ //console.log("d3.min y ", d);
                             return d[selecBoxKey]; }) / 1.005, 
             d3.max(vis.validData, function(d){ return d[selecBoxKey]; }) * 1.005]);
-
+    console.log("y max ", vis.y.range[1]);
     vis.yAxisCall.scale(vis.y);
         vis.yAxis.transition(vis.t()).call(vis.yAxisCall);
 
@@ -159,6 +162,31 @@ BoxPlot.prototype.filterData = function()
     
 }
 
+BoxPlot.prototype.clKeep = function() {
+    console.log("clKeep ");
+    vis = this;
+
+    vis.previousData = vis.filterData;
+    vis.validData = [];
+    let selecRegion = $("#region-select").val();
+    let selecState = $("#region-select").val();
+
+    
+
+    // let validate
+    // if(selecState =! "any")
+    // {}
+    // else if(selecState)
+    // for (const city of previousData) {
+        
+    //     for (const iterator of object) {
+            
+    //     }
+    // }
+
+
+};
+
 BoxPlot.prototype.onChangeRg = function() {
     console.log("onChangeRg ");
     console.log($("#region-select").val());
@@ -182,20 +210,22 @@ BoxPlot.prototype.onChangeSt = function() {
     {
         filterStates = statesData.filter((d)=>{ return (d.data.regiao === selecRegion);});
     }
-    console.log("filterStates ", filterStates)
-    console.log("stateDefaultOp ", vis.stateDefaultOp[0].data)
+    vis.stState.selectAll("option").remove();
     vis.stState.selectAll("option")
-        .data(vis.stateDefaultOp.concat(filterStates), function(d){ return d.data.sigla});
-    console.log("vis.stState.exit() ", vis.stState.exit())
-    //     vis.stState.exit().remove();
-    // vis.stState.enter()
-    //     .append("option")
-    //     .text(function(d) {return d.data.nome;})
-    //     .attr("value", function(d) {return d.data.sigla;});;
+        .data(vis.stateDefaultOp.concat(filterStates), function(d){ return d.data.sigla})
+        .enter()
+        .append("option")
+        .text(function(d) {return d.data.nome;})
+        .attr("value", function(d) {return d.data.sigla;});    
 };
 
 BoxPlot.prototype.onChangeAttr = function() {
-    console.log("onChangeAttr ")
+    console.log("onChangeAttr ", $("#attr-select").val())
+    if($("#attr-select").val() != "Atributo")
+    {
+        selecBoxKey = $("#attr-select").val();
+        this.updateVis();
+    }
 };
 
 BoxPlot.prototype.initFilterFields = function(){

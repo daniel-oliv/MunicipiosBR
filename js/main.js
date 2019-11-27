@@ -196,8 +196,7 @@ function getQuantis(_data, attrKey)
     // let half2 = bisector(median);
     // let q1Array = bisector(q3);
 
-    // let bisector = d3.bisector(function(d) { return y(d) }).right;
-    // console("y max ", y.range[1]);
+    // let bis.log("y max ", y.range[1]);
     // let lineBoxHeight = vis.r*2;
     // let rollUpIa = 0;
     // for (let clUpLim = 0; clUpLim < y.range[1]; clUpLim+=lineBoxHeight) {
