@@ -52,7 +52,7 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
             citesExpensesData.push(city)
         }
     }
-    console.log("expensesCSVData", expensesCSVData);
+   //console.log("expensesCSVData", expensesCSVData);
    //console.log("statesExpensesData", citesExpensesData);
     //FileManager.saveCSV("teste", citesExpensesData);
     //console.log(yearKeys);
@@ -136,10 +136,10 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
         .sum(function(d) {return d.qtMun["2010"]; })
         .sort(function(a, b) {//console.log("sort ",(b.data.nome +" " + a.data.nome));console.log("sort ",(b.data.qtMun["2010"] - a.data.qtMun["2010"]));
             return b.data.qtMun["2010"] - a.data.qtMun["2010"]; });
-    console.log("country ", country);
+   //console.log("country ", country);
     statesData = country.descendants().filter((d)=>{return !d.children});
     regionsData = country.children;
-    console.log("regionsData ", regionsData);
+   //console.log("regionsData ", regionsData);
     hoveredNumMun = [];
     hoveredNumMun.push(country);
 
@@ -188,7 +188,9 @@ function getQuantis(_data, attrKey)
     let q1 = d3.quantile(attrArray,.25);
     let median = d3.quantile(attrArray,.5);
     let q3 = d3.quantile(attrArray,.75);
-    //console.log("getQuantis q1 ", q1);console.log("median ", median);console.log("q3 ", q3);
+   //console.log("getQuantis q1 ", q1);console.log("median ", median);console.log("q3 ", q3);
+    return {q1: q1, median: median, q3: q3, key: attrKey};
+    
 
     //!bisectRight will always return the same index - the common index for a non repeated element. for repeated and non repeated element
     //! while bisectLeft will return a different index (i-1), that is, when dividing an array, the future previous group will not include the element
@@ -255,4 +257,9 @@ function isCity(node)
 function isRegion(node)
 {
 
+}
+
+function getRandomInt(maxExclusive)
+{
+    return Math.floor(Math.random() * maxExclusive);
 }

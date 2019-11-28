@@ -10,7 +10,7 @@ BoxPlot = function(_parentElement, _data, _title = ""){
 BoxPlot.prototype.initVis = function(){
     let vis = this;
     vis.margin = { left:60, right:50, top:100, bottom:60 };
-    vis.height = 1800 - vis.margin.top - vis.margin.bottom;
+    vis.height = 1000 - vis.margin.top - vis.margin.bottom;
     vis.width = $(vis.parentElement).width() - vis.margin.left - vis.margin.right;
     //console.log(vis.width);
 
@@ -63,13 +63,32 @@ BoxPlot.prototype.initVis = function(){
         .text(function(d) {return d;})
         .attr("value", function(d) {return d;});
 
+    //! scale log or Linear
+    vis.stScale = vis.stSelecToolDiv.append("select")
+        .attr("id", "scale-select")
+        .attr("name", "scale")
+        .attr("class", "form-control")
+        .on("change", ()=>{vis.updateVis()});
+    
+    vis.scaleOp=["Log", "Linear"]; 
+    vis.options = vis.stScale.selectAll("option")
+        .data(vis.scaleOp)
+        .enter()
+        .append("option")
+        .text(function(d) {return d;})
+        .attr("value", function(d) {return d;});
+    
     vis.inInterval = vis.stSelecToolDiv.append("input")
         .attr("id", "interval-input")
         .attr("placeHolder", "Insira os intervalos no formato: 5000;5000:10000;10000")
-        .attr("class", "form-control");
+        .attr("class", "form-control")
+        .attr("value", "5000;5000:10000;10000:100000;100000");
 
     d3.select("#keepBt")
-        .on("click", ()=>vis.clKeep(vis))
+        .on("click", ()=>vis.clKeep(vis));
+
+    d3.select("#colorBt")
+        .on("click", ()=>vis.clColor(vis))
 
     //! svg for vizualization
     vis.svg = d3.select(vis.parentElement)
@@ -95,18 +114,26 @@ BoxPlot.prototype.initVis = function(){
         .attr("transform", "translate("+(-0) + ",0)");
 
     // Y-Axis label
+    // vis.g.append("text")
+    // .attr("id", "yLabel")
+    // .attr("class", "y axisLabel")
+    // .attr("transform", "rotate(-90)")
+    // .attr("y", -40)
+    // .attr("x", -vis.height/2)
+    // .attr("font-size", "20px")
+    // .style("text-anchor", "middle")
+    // .text("Nº de municípios");
     vis.g.append("text")
+    .attr("id", "yLabel")
     .attr("class", "y axisLabel")
-    .attr("transform", "rotate(-90)")
     .attr("y", -40)
-    .attr("x", -vis.height/2)
+    .attr("x", vis.width/2)
     .attr("font-size", "20px")
-    .style("text-anchor", "middle")
-    .text("Nº de municípios");
+    .style("text-anchor", "middle");
 
     vis.r = 2.5;
     vis.lineBoxHeight = vis.r*2;
-    vis.boxWidth = vis.width-200;
+    vis.boxWidth = vis.width;
     vis.x1Box = 0;
     /// using left since  y(d) will be a stream in descending order (height to 0 px)
     vis.bisector = d3.bisector(function(d) { return d }).right; 
@@ -121,28 +148,65 @@ BoxPlot.prototype.initVis = function(){
     //     .attr("height", vis.height*0.9)
     //     .attr("width", vis.width*0.9);
 
-    
     vis.filteredData = vis.data;
-    console.log("filteredData", vis.filteredData);
+   //console.log("filteredData", vis.filteredData);
     vis.updateVis();
+    vis.rangeColors = d3.scaleOrdinal(d3.schemeSet1);
 }
 
 BoxPlot.prototype.updateVis = function(){
     let vis = this;
+    vis.elementsShowed = 0;
     [vis.validData,  vis.unvalidData] = rollUpValidAndUnvalid(vis.filteredData, (d)=>{return d[selecBoxKey] > 0;});
-    console.log("vis.validData", vis.validData);
-    console.log("update vis.filteredData", vis.filteredData);
+   //console.log("vis.validData", vis.validData);
+   //console.log("update vis.filteredData", vis.filteredData);
+
+    vis.g.select("#yLabel")
+        .text(selecBoxKey + " - " + vis.validData.length + " municípios mostrados");
 
     // Show the Y scale
     vis.yMax = 0;
-    vis.y = d3.scaleLog().range([vis.height, vis.yMax]);
+    vis.scaleType = $("#scale-select").val()
+    if( vis.scaleType === "Log")
+    {
+        vis.y = d3.scaleLog().range([vis.height, vis.yMax]);
+    }
+    else{
+        vis.y = d3.scaleLinear().range([vis.height, vis.yMax]);
+    }
+   
     vis.y.domain([d3.min(vis.validData, function(d){ //console.log("d3.min y ", d);
                             return d[selecBoxKey]; }) / 1.005, 
             d3.max(vis.validData, function(d){ return d[selecBoxKey]; }) * 1.005]);
-    console.log("y max ", vis.y.range[1]);
+            
     vis.yAxisCall.scale(vis.y);
         vis.yAxis.transition(vis.t()).call(vis.yAxisCall);
 
+    vis.dataQuantisBoxes = [];
+    vis.dataQuantisBoxes.push(getQuantis(vis.validData, selecBoxKey));
+
+    vis.boxes = vis.g.selectAll(".boxes").remove();
+
+    vis.boxes = vis.g
+    .selectAll(".boxes")
+    .data(vis.dataQuantisBoxes, (d)=>{console.log("data d ", d);return (d.key+"-"+vis.scaleType);});
+
+    //console.log(vis.boxes.exit());
+    //vis.boxes.exit().remove();
+    
+    vis.boxes
+    .enter()
+    .append("rect")
+        .attr("class", "boxes")
+        .attr("x", function(d){return 0;})
+        .merge(vis.boxes)
+        .attr("y", function(d){return(vis.y(d.q3))})
+        .attr("height", function(d){return(vis.y(d.q1)-vis.y(d.q3))})
+        .attr("width", vis.boxWidth )
+        .attr("stroke", "black")
+        .attr("stroke-width", "2px")
+        .style("fill", "none")
+    
     vis.setXData();
 
     vis.circles =vis.g.selectAll(".circle-box")
@@ -158,10 +222,10 @@ BoxPlot.prototype.updateVis = function(){
         vis.circles
             .transition(vis.t)
             .attr("r", vis.r)
-            //.attr("stroke", "black")
-            .style("fill", "green")
+            .attr("stroke", "black")
+            .style("fill", (d)=>{return d.color ?  d.color : "none"; })
             .attr("cx", function(d){return d.x;})
-            .attr("cy", function(d){return vis.y(d[selecBoxKey] );})
+            .attr("cy", function(d){return vis.y(d[selecBoxKey] );});
 }
 
 BoxPlot.prototype.filterData = function()
@@ -173,38 +237,150 @@ BoxPlot.prototype.filterData = function()
     
 }
 
+BoxPlot.prototype.clColor = function(vis) {
+    //console.log("clKeep ");
+     let selecRegion = $("#region-select").val();
+     let selecState = $("#state-select").val();
+     let isRgSelected = selecRegion != "any";
+     let isStSelected = selecState != "any";
+     let selectedInterval = $("#interval-input").val();
+     
+    //console.log("vis.filteredData ", vis.filteredData);
+     vis.currentFiltered = vis.filteredData.concat();
+ 
+     /// it does not make sense use previous location-filtered data to filter action
+     if(selectedInterval == "")
+     if(isStSelected || isRgSelected)
+     {
+        //console.log("vis.previousData ", vis.previousData);
+         vis.currentFiltered = [];
+         for (const city of vis.data) {
+             if(isStSelected)
+             {
+                 if(city.UF === selecState)
+                 {
+                     //console.log("adding ", city);
+                     vis.currentFiltered.push(city);
+                 }
+             }
+             else if(isRgSelected)
+             {
+                 if(city.regiao === selecRegion)
+                 {
+                     vis.currentFiltered.push(city);
+                 }
+             }
+         }
+     }
+ 
+     if(selectedInterval != "")
+     {
+         let attrArray = vis.currentFiltered.map(d=>d[selecBoxKey]);
+        //console.log("selectedInterval ", selectedInterval);
+        //console.log("attrArray ", attrArray);
+        //console.log("bisect ", d3.bisectLeft(attrArray,parseInt(0)));
+         let intervals = selectedInterval.split(";");
+         let pairIntervals = [];
+         intervals.forEach(elem => {
+             let range = elem.split(":");
+             pairIntervals.push( range.map((d)=>parseInt(d)) );
+             if(pairIntervals[0].length == 1)
+             {//initial interval
+                 pairIntervals[0].splice(0,0,0);
+             }
+         });
+ 
+        //console.log("pairIntervals ", pairIntervals);
+         let fAttrData = [];
+         for (const city of vis.currentFiltered) {
+            city.color = "none";
+             for (let index = 0; index < pairIntervals.length; index++) 
+             {
+                 let range = pairIntervals[index]
+                 if( city[selecBoxKey] >= range[0] && (range.length === 1 || city[selecBoxKey] < range[1]) )
+                 {
+                     console.log(intervals[index]);
+                    city.color = vis.rangeColors(intervals[index]);
+                 }
+             }
+         }
+         vis.currentFiltered = fAttrData.concat();
+     }
+     
+
+    //console.log("filteredData ", vis.filteredData);
+     vis.updateVis();
+ 
+ };
+
 BoxPlot.prototype.clKeep = function(vis) {
-    console.log("clKeep ");
-    //let vis = this;
-    
-    console.log("vis.filteredData ", vis.filteredData);
-    vis.previousData = vis.filteredData.concat();
-    console.log("vis.previousData ", vis.previousData);
-    vis.filteredData = [];
+   //console.log("clKeep ");
     let selecRegion = $("#region-select").val();
     let selecState = $("#state-select").val();
     let isRgSelected = selecRegion != "any";
     let isStSelected = selecState != "any";
+    let selectedInterval = $("#interval-input").val();
+    
+   //console.log("vis.filteredData ", vis.filteredData);
+    vis.previousData = vis.filteredData.concat();
+    vis.currentFiltered = vis.data.concat();
 
     /// it does not make sense use previous location-filtered data to filter action
-    for (const city of vis.data) {
-        if(isStSelected)
-        {
-            if(city.UF === selecState)
+    if(isStSelected || isRgSelected)
+    {
+       //console.log("vis.previousData ", vis.previousData);
+        vis.currentFiltered = [];
+        for (const city of vis.data) {
+            if(isStSelected)
             {
-                console.log("adding ", city);
-                vis.filteredData.push(city);
+                if(city.UF === selecState)
+                {
+                    //console.log("adding ", city);
+                    vis.currentFiltered.push(city);
+                }
             }
-        }
-        else if(isRgSelected)
-        {
-            if(city.regiao === selecRegion)
+            else if(isRgSelected)
             {
-                vis.filteredData.push(city);
+                if(city.regiao === selecRegion)
+                {
+                    vis.currentFiltered.push(city);
+                }
             }
         }
     }
-    console.log("filteredData ", vis.filteredData);
+
+    if(selectedInterval != "")
+    {
+        let attrArray = vis.currentFiltered.map(d=>d[selecBoxKey]);
+       //console.log("selectedInterval ", selectedInterval);
+       //console.log("attrArray ", attrArray);
+       //console.log("bisect ", d3.bisectLeft(attrArray,parseInt(0)));
+        let intervals = selectedInterval.split(";");
+        let pairIntervals = [];
+        intervals.forEach(elem => {
+            let range = elem.split(":");
+            pairIntervals.push( range.map((d)=>parseInt(d)) );
+            if(pairIntervals[0].length == 1)
+            {//initial interval
+                pairIntervals[0].splice(0,0,0);
+            }
+        });
+
+       //console.log("pairIntervals ", pairIntervals);
+        let fAttrData = [];
+        for (const city of vis.currentFiltered) {
+            for (const range of pairIntervals) {
+                if( city[selecBoxKey] >= range[0] && (range.length === 1 || city[selecBoxKey] < range[1]) )
+                {
+                    fAttrData.push(city);
+                }
+            }
+        }
+        vis.currentFiltered = fAttrData.concat();
+
+    }
+    vis.filteredData = vis.currentFiltered.concat();
+   //console.log("filteredData ", vis.filteredData);
     vis.updateVis();
 
 };
@@ -212,16 +388,16 @@ BoxPlot.prototype.clKeep = function(vis) {
 BoxPlot.prototype.onChangeRg = function() {
     let vis = this;
 
-    console.log("onChangeRg ");
+   //console.log("onChangeRg ");
     let selecRegion = $("#region-select").val();
-    console.log($("#region-select").val());
+   //console.log($("#region-select").val());
 
-    console.log("onChangeSt selecRegion ", selecRegion)
+   //console.log("onChangeSt selecRegion ", selecRegion)
 
     let filterStates;
     if( selecRegion === "any")
     {   
-        console.log("any region")
+       //console.log("any region")
         filterStates = statesData;
     }
     else
@@ -248,7 +424,7 @@ BoxPlot.prototype.onChangeSt = function() {
 };
 
 BoxPlot.prototype.onChangeAttr = function() {
-    console.log("onChangeAttr ", $("#attr-select").val())
+   //console.log("onChangeAttr ", $("#attr-select").val())
     if($("#attr-select").val() != "Atributo")
     {
         selecBoxKey = $("#attr-select").val();
@@ -275,13 +451,14 @@ BoxPlot.prototype.setXData = function(){
         let lineData = vis.validData.slice(rollUpIa, rollUpI);
         rollUpIa = rollUpI;
         //console.log("lineData ", lineData);
-        vis.setCentralX(lineData)
+        vis.setRandomX(lineData)
         //console.log("lineData ", lineData)
         if(clUpLim === vis.yMax)
         {
            break;
         }
     }  
+    console.log("elementsShowed ", this.elementsShowed)
 }
 
 BoxPlot.prototype.setCentralX = function(lineData)
@@ -312,39 +489,19 @@ BoxPlot.prototype.setRandomX = function(lineData)
 {
     //console.log("lineData ", lineData.length)
     let vis = this; 
-    let step = vis.boxWidth / (lineData.length-1);
-    //let step = vis.r*3;
-    let actualRange = 0;
-    let centralX =  vis.x1Box + vis.boxWidth / 2;
-    let i = 0;
-    if(lineData.length % 2 != 0)
-    {
-        //console.log("is odd length i ", i)
-        lineData[i].x = centralX;
-        i++;
-    }
+    let wSlot = this.r * 2;
 
-    for (; i < lineData.length; i+=2) {
-        //console.log("i ", i);
-        actualRange+=step;
-       //console.log("i ", i);
-        lineData[i].x = centralX + actualRange;
-        lineData[i+1].x = centralX - actualRange;     
+    let possibleX = d3.range((vis.x1Box + wSlot/2), vis.boxWidth + vis.x1Box, wSlot);
+    //console.log("possibleX", possibleX);
+    //console.log("lineData", lineData.length);
+    for (let i = 0; i < lineData.length; i++) {
+        this.elementsShowed++;
+        let randPos = getRandomInt(possibleX.length);
+        let xPos = possibleX.splice(randPos,1);
+        lineData[i].x = xPos;
+        if(possibleX.length === 0) possibleX = d3.range(vis.x1Box + getRandomInt(wSlot), vis.boxWidth + vis.x1Box, wSlot);             
     }
 }
-
-BoxPlot.prototype.setMostDistantX = function(lineData)
-{
-    let vis = this;
-    let step = vis.boxWidth / lineData.length;
-    let xa = vis.x1Box;
-    for(d of lineData)
-    {
-        d.x = xa + step;
-        xa = d.x;
-    }
-}
-
 ///for show selects that can be added continuous
 // vis.stShowDiv = d3.select(vis.parentElement).append("div");
 // vis.slCount = 1;
