@@ -239,6 +239,15 @@ BoxPlot.prototype.filterData = function()
 
 BoxPlot.prototype.clColor = function(vis) {
     //console.log("clKeep ");
+     //! Legend initialization
+     vis.legendX = vis.width - 30;
+     vis.legendY = 30;
+     vis.legendColor = vis.svg.append("g")
+         .attr("class", "legend")
+         .attr("transform", "translate("+ vis.legendX +","+ vis.legendY + ")")
+         .attr("width", 200)
+         .attr("height", 100);
+
      let selecRegion = $("#region-select").val();
      let selecState = $("#state-select").val();
      let isRgSelected = selecRegion != "any";
@@ -280,6 +289,8 @@ BoxPlot.prototype.clColor = function(vis) {
         //console.log("attrArray ", attrArray);
         //console.log("bisect ", d3.bisectLeft(attrArray,parseInt(0)));
          let intervals = selectedInterval.split(";");
+         console.log(vis.legendColor);
+         vis.printLegend(vis.legendColor, intervals, vis.rangeColors, d=>d);
          let pairIntervals = [];
          intervals.forEach(elem => {
              let range = elem.split(":");
@@ -299,7 +310,6 @@ BoxPlot.prototype.clColor = function(vis) {
                  let range = pairIntervals[index]
                  if( city[selecBoxKey] >= range[0] && (range.length === 1 || city[selecBoxKey] < range[1]) )
                  {
-                     console.log(intervals[index]);
                     city.color = vis.rangeColors(intervals[index]);
                  }
              }
@@ -312,6 +322,28 @@ BoxPlot.prototype.clColor = function(vis) {
      vis.updateVis();
  
  };
+
+BoxPlot.prototype.printLegend = function(legendSelector, coloredElems, getColor, getText)
+{
+    coloredElems.forEach((item, i)=>{
+        let legendRow = legendSelector.append("g")
+            .attr("transform", "translate(0," + (i * 20) + ")");
+
+            legendRow.append("rect")
+                .attr("width", 10)
+                .attr("height", 10)
+                .attr("fill", getColor(item));
+
+            legendRow.append("text")
+                .attr("x", -10)
+                .attr("y", 10)
+                .attr("text-anchor", "end")
+                .style("text-transform", "capitalize")
+                .text(getText(item))
+                    .attr("fill",  getColor(item));
+    });
+ 
+}
 
 BoxPlot.prototype.clKeep = function(vis) {
    //console.log("clKeep ");
