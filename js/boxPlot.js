@@ -1,3 +1,4 @@
+
 BoxPlot = function(_parentElement, _data, _title = ""){
     let vis = this;
     vis.parentElement = _parentElement;
@@ -8,9 +9,10 @@ BoxPlot = function(_parentElement, _data, _title = ""){
 };
 
 BoxPlot.prototype.initVis = function(){
+    
     let vis = this;
     vis.margin = { left:60, right:50, top:100, bottom:60 };
-    vis.height = 1000 - vis.margin.top - vis.margin.bottom;
+    vis.height = 700 - vis.margin.top - vis.margin.bottom;
     vis.width = $(vis.parentElement).width() - vis.margin.left - vis.margin.right;
     //console.log(vis.width);
 
@@ -44,6 +46,22 @@ BoxPlot.prototype.initVis = function(){
         .append("option")
         .text(function(d) {return d.data.nome;})
         .attr("value", function(d) {return d.data.sigla;});
+
+    //! city select
+    vis.stCity = vis.stSelecToolDiv.append("select")
+        .attr("id", "city-select")
+        .attr("name", "city")
+        .on("change", ()=>{vis.onChangeCity()});
+
+    vis.cityDefaultOp=[{nome:"Cidade", id:"any"} ]; 
+
+    vis.options = vis.stCity.selectAll("option")
+        .data(vis.cityDefaultOp.concat(vis.data), function(d){ return d.id;})
+        .enter()
+        .append("option")
+        .text(function(d) {return d.nome;})
+        .attr("value", function(d) {return d.id;});
+
 
     //!Attribute select
     vis.stSelecToolDiv.append("br")
@@ -88,7 +106,10 @@ BoxPlot.prototype.initVis = function(){
         .on("click", ()=>vis.clKeep(vis));
 
     d3.select("#colorBt")
-        .on("click", ()=>vis.clColor(vis))
+        .on("click", ()=>vis.clColor(vis));
+
+    d3.select("#focusBt")
+        .on("click", ()=>vis.clFocus(vis));
 
     //! svg for vizualization
     vis.svg = d3.select(vis.parentElement)
@@ -101,8 +122,7 @@ BoxPlot.prototype.initVis = function(){
 
     // Axis generators
     //vis.xAxisCall = d3.axisBottom().ticks(7);
-    vis.yAxisCall = d3.axisLeft()
-        .tickFormat(function(d){ return "R$ " + d; });
+    vis.yAxisCall = d3.axisLeft();
     
 
     // Axis groups
@@ -158,7 +178,7 @@ BoxPlot.prototype.updateVis = function(){
     let vis = this;
     vis.elementsShowed = 0;
     [vis.validData,  vis.unvalidData] = rollUpValidAndUnvalid(vis.filteredData, (d)=>{return d[selecBoxKey] > 0;});
-   //console.log("vis.validData", vis.validData);
+    console.log("vis.validData", vis.validData);
    //console.log("update vis.filteredData", vis.filteredData);
 
     vis.g.select("#yLabel")
@@ -170,17 +190,62 @@ BoxPlot.prototype.updateVis = function(){
     if( vis.scaleType === "Log")
     {
         vis.y = d3.scaleLog().range([vis.height, vis.yMax]);
+        vis.yAxisCall.ticks(3);
     }
     else{
         vis.y = d3.scaleLinear().range([vis.height, vis.yMax]);
+        vis.yAxisCall.ticks(8);
     }
    
     vis.y.domain([d3.min(vis.validData, function(d){ //console.log("d3.min y ", d);
                             return d[selecBoxKey]; }) / 1.005, 
             d3.max(vis.validData, function(d){ return d[selecBoxKey]; }) * 1.005]);
             
-    vis.yAxisCall.scale(vis.y);
-        vis.yAxis.transition(vis.t()).call(vis.yAxisCall);
+    vis.yAxisCall.scale(vis.y)
+        
+        .tickFormat(getTickFormat(selecBoxKey));
+    
+    vis.yAxis.transition(vis.t()).call(vis.yAxisCall);
+    /// for color classes metrics
+    if(vis.legendColor)
+    {
+        vis.colorMetrics = {};
+        for (const interval of vis.intervals) {
+            vis.colorMetrics[interval] = {count:0, total:0};
+        }
+        //! Legend initialization
+        vis.svg.select("#legend-color").remove();
+        vis.legendX = vis.width + 100;
+        vis.legendY = 30;
+        vis.legendColor = vis.svg.append("g")
+            .attr("class", "legend")
+            .attr("id", "legend-color")
+            .attr("transform", "translate("+ vis.legendX +","+ vis.legendY + ")");
+        
+        
+        for (const city of vis.validData) {
+            vis.colorMetrics[city.clColor].count++;
+            if(selecBoxKey.includes("per capita"))
+            {
+                vis.colorMetrics[city.clColor].total += city[selecBoxKey] * city[popKey];
+            }
+            else{
+                vis.colorMetrics[city.clColor].total += city[selecBoxKey];
+            }
+        }
+        vis.printTextLegend(vis.legendColor, [selecBoxKey],d=>d)
+        vis.printColorLegend(vis.legendColor, vis.intervals, vis.rangeColors, (d)=>{return (d+ " Total de:" + getTickFormat(selecBoxKey)(vis.colorMetrics[d].total) );}, 20);
+
+   //console.log("colorMetrics ", vis.colorMetrics);
+    let sumAttr1 = 0;
+    let countT1 = 0;
+    for (const interval of vis.intervals) {
+        sumAttr1 += vis.colorMetrics[interval].total;
+        countT1 += vis.colorMetrics[interval].count;
+    }
+    console.log("sumAttr1", sumAttr1);
+    console.log("countT1", countT1);
+    }
 
     vis.dataQuantisBoxes = [];
     vis.dataQuantisBoxes.push(getQuantis(vis.validData, selecBoxKey));
@@ -189,7 +254,7 @@ BoxPlot.prototype.updateVis = function(){
 
     vis.boxes = vis.g
     .selectAll(".boxes")
-    .data(vis.dataQuantisBoxes, (d)=>{console.log("data d ", d);return (d.key+"-"+vis.scaleType);});
+    .data(vis.dataQuantisBoxes, (d)=>{return (d.key+"-"+vis.scaleType);});
 
     //console.log(vis.boxes.exit());
     //vis.boxes.exit().remove();
@@ -208,24 +273,33 @@ BoxPlot.prototype.updateVis = function(){
         .style("fill", "none")
     
     vis.setXData();
-
-    vis.circles =vis.g.selectAll(".circle-box")
-        .data(vis.validData, vis.validData.id);
-    
+// DATA
+    vis.circles = vis.g.selectAll(".circle-box")
+      .data(vis.validData, (d)=>{return d.id;});
+   //console.log("after data ", vis.circles);
+// UPDATE old elements that are in both old and new list before use enter
+    vis.circles
+        .attr("class", "circle-box")
+        .selectAll("title").remove();
+// EXIT  
     vis.circles.exit().remove();
-    vis.circles = vis.circles
-        .enter()
-        .append("circle")
-            .attr("class", "circle-box")
-        .merge(vis.circles)
-        
-        vis.circles
-            .transition(vis.t)
-            .attr("r", vis.r)
-            .attr("stroke", "black")
-            .style("fill", (d)=>{return d.color ?  d.color : "none"; })
-            .attr("cx", function(d){return d.x;})
-            .attr("cy", function(d){return vis.y(d[selecBoxKey] );});
+   //console.log("after exit remove ", vis.circles);
+// ENTER
+    vis.circles.enter().append("circle")
+        .attr("class", "circle-box");
+// ENTER + UPDATE
+    // .merge(vis.circle) 
+vis.circles = vis.g.selectAll(".circle-box")
+    //     .transition(vis.t)
+        .attr("r", d=>d.focus ? vis.r*1.2 : vis.r)
+        .attr("stroke", "black")
+        .attr("stroke-width", d=>{return d.focus ? "2.5px": "0.1px"})
+        .attr("fill-opacity", d=>{return !vis.focusApplied ? 1 : (d.focus ? "1": "0.2") })
+        .style("fill", (d)=>{return d.color ?  d.color : "none"; })
+        .attr("cx", function(d){return d.x;})
+        .attr("cy", function(d){return vis.y(d[selecBoxKey] );})
+        .append("title")
+            .text(function(d) { return d["nome"] + ", " + d["UF"]+ "\n" + selecBoxKey + ": "+ d[selecBoxKey] + "\n"; });
 }
 
 BoxPlot.prototype.filterData = function()
@@ -237,17 +311,104 @@ BoxPlot.prototype.filterData = function()
     
 }
 
+BoxPlot.prototype.clFocus = function(vis) {
+    //console.log("clKeep ");
+    //! for class color metrics
+    vis.focusApplied = false;
+     
+     let selecRegion = $("#region-select").val();
+     let selecState = $("#state-select").val();
+     let selecCity= $("#city-select").val();
+    console.log("selecCity ", selecCity);
+     let isRgSelected = selecRegion != "any";
+     let isStSelected = selecState != "any";
+     let isCitySelected = selecCity != "any";
+
+     let selectedInterval = $("#interval-input").val();
+     
+    //console.log("vis.filteredData ", vis.filteredData);
+     vis.currentFiltered = vis.filteredData.concat();
+ 
+     /// it does not make sense use previous location-filtered data to filter action
+     //if(selectedInterval == "")
+     if(isCitySelected || isStSelected || isRgSelected)
+     {
+       //console.log("isStSelected ", isStSelected);
+         vis.currentFiltered = [];
+         for (const city of vis.data) {
+            if(isCitySelected)
+            {
+                //console.log("isCitySelected", isCitySelected);
+                console.log("city.id" , city.id);
+                if(city.id == selecCity)
+                {
+                    console.log("adding ", city);
+                    vis.currentFiltered.push(city);
+                    break;
+                }
+            }
+             else if(isStSelected)
+             {
+                 if(city.UF === selecState)
+                 {
+                     //console.log("adding ", city);
+                     vis.currentFiltered.push(city);
+                 }
+             }
+             else if(isRgSelected)
+             {
+                 if(city.regiao === selecRegion)
+                 {
+                     vis.currentFiltered.push(city);
+                 }
+             }
+         }
+     }
+     let pairIntervals = [];
+     if(selectedInterval != "")
+     {
+         vis.intervals = selectedInterval.split(";");   
+         vis.intervals.forEach(elem => {
+             let limit = elem.split(":");
+             pairIntervals.push( limit.map((d)=>parseInt(d)) );
+             if(pairIntervals.length > 1 && pairIntervals[0].length == 1)
+             {//initial interval
+                 pairIntervals[0].splice(0,0,0);
+             }
+         });
+         
+        for (const city of vis.currentFiltered) {
+            city.focus = false;
+            for (let index = 0; index < pairIntervals.length; index++) 
+            {
+                let range = pairIntervals[index]
+                if( city[selecBoxKey] >= range[0] && (range.length === 1 || city[selecBoxKey] < range[1]) ) 
+                {
+                    //console.log("focus applied.");
+                    vis.focusApplied = true;
+                    city.focus = true;
+                    /// go to next city
+                    break;
+                }
+            }
+        }
+    }
+    else{
+        if(vis.currentFiltered.length > 0) vis.focusApplied = true;
+        for (const city of vis.currentFiltered) {city.focus = true};
+    }
+     vis.updateVis();
+ };
+
 BoxPlot.prototype.clColor = function(vis) {
     //console.log("clKeep ");
-     //! Legend initialization
-     vis.legendX = vis.width - 30;
-     vis.legendY = 30;
-     vis.legendColor = vis.svg.append("g")
-         .attr("class", "legend")
-         .attr("transform", "translate("+ vis.legendX +","+ vis.legendY + ")")
-         .attr("width", 200)
-         .attr("height", 100);
-
+    //! for class color metrics
+    /// legend
+    vis.legendColor = vis.svg.append("g")
+        .attr("class", "legend")
+        .attr("id", "legend-color")
+        .attr("transform", "translate("+ vis.legendX +","+ vis.legendY + ")");
+     
      let selecRegion = $("#region-select").val();
      let selecState = $("#state-select").val();
      let isRgSelected = selecRegion != "any";
@@ -288,19 +449,21 @@ BoxPlot.prototype.clColor = function(vis) {
         //console.log("selectedInterval ", selectedInterval);
         //console.log("attrArray ", attrArray);
         //console.log("bisect ", d3.bisectLeft(attrArray,parseInt(0)));
-         let intervals = selectedInterval.split(";");
-         console.log(vis.legendColor);
-         vis.printLegend(vis.legendColor, intervals, vis.rangeColors, d=>d);
+         vis.intervals = selectedInterval.split(";");
+         //console.log(vis.legendColor);
+
          let pairIntervals = [];
-         intervals.forEach(elem => {
-             let range = elem.split(":");
-             pairIntervals.push( range.map((d)=>parseInt(d)) );
-             if(pairIntervals[0].length == 1)
+         vis.intervals.forEach(elem => {
+             let limit = elem.split(":");
+             pairIntervals.push( limit.map((d)=>parseInt(d)) );
+             if(pairIntervals.length > 1 && pairIntervals[0].length == 1)
              {//initial interval
                  pairIntervals[0].splice(0,0,0);
              }
          });
  
+         /// for color classes metrics
+         
         //console.log("pairIntervals ", pairIntervals);
          let fAttrData = [];
          for (const city of vis.currentFiltered) {
@@ -310,10 +473,12 @@ BoxPlot.prototype.clColor = function(vis) {
                  let range = pairIntervals[index]
                  if( city[selecBoxKey] >= range[0] && (range.length === 1 || city[selecBoxKey] < range[1]) )
                  {
-                    city.color = vis.rangeColors(intervals[index]);
+                    city.clColor = vis.intervals[index];
+                    city.color = vis.rangeColors(vis.intervals[index]);
                  }
              }
          }
+         //console.log("vis.colorMetrics ", vis.colorMetrics)
          vis.currentFiltered = fAttrData.concat();
      }
      
@@ -323,11 +488,38 @@ BoxPlot.prototype.clColor = function(vis) {
  
  };
 
-BoxPlot.prototype.printLegend = function(legendSelector, coloredElems, getColor, getText)
+ BoxPlot.prototype.setClassColorElemsMetrics = function(_data, intervalsKeys)
+ {
+    [vis.validData,  vis.unvalidData] = rollUpValidAndUnvalid(vis.filteredData, (d)=>{return d[selecBoxKey] > 0;});
+    for (const city of vis.validData) {
+        for (const interval of intervals) {
+            
+        }
+    }
+ };
+
+ BoxPlot.prototype.printTextLegend = function(legendSelector, textElems, getText)
+{  //console.log("printTextLegend ");
+    textElems.forEach((item, i)=>{
+        let legendRow = legendSelector.append("g")
+            .attr("transform", "translate(0," + (i * 20) + ")");
+
+            legendRow.append("text")
+                .attr("x", 0)
+                .attr("y", 10)
+                .attr("text-anchor", "end")
+                .style("text-transform", "capitalize")
+                .text(getText(item))
+                    .attr("fill",  getText(item));
+    });
+ 
+};
+
+BoxPlot.prototype.printColorLegend = function(legendSelector, coloredElems, getColor, getText, yOffset = 0)
 {
     coloredElems.forEach((item, i)=>{
         let legendRow = legendSelector.append("g")
-            .attr("transform", "translate(0," + (i * 20) + ")");
+            .attr("transform", "translate(0," + (yOffset + i * 20) + ")");
 
             legendRow.append("rect")
                 .attr("width", 10)
@@ -380,7 +572,7 @@ BoxPlot.prototype.clKeep = function(vis) {
             }
         }
     }
-
+   //console.log("vis.currentFiltered", vis.currentFiltered);
     if(selectedInterval != "")
     {
         let attrArray = vis.currentFiltered.map(d=>d[selecBoxKey]);
@@ -392,7 +584,7 @@ BoxPlot.prototype.clKeep = function(vis) {
         intervals.forEach(elem => {
             let range = elem.split(":");
             pairIntervals.push( range.map((d)=>parseInt(d)) );
-            if(pairIntervals[0].length == 1)
+            if(pairIntervals.length > 1 && pairIntervals[0].length == 1)
             {//initial interval
                 pairIntervals[0].splice(0,0,0);
             }
@@ -450,10 +642,38 @@ BoxPlot.prototype.onChangeRg = function() {
 
 BoxPlot.prototype.onChangeSt = function() {
     let vis = this;
-    
-    
+    let selecState = $("#state-select").val();
+   //console.log($("#region-select").val());
+   //console.log("onChangeSt selecRegion ", selecRegion)
+
+    let filterCities;
+    let stSigla;
+    if( selecState === "any")
+    {   
+       //console.log("any region")
+       filterCities = vis.data;
+    }
+    else
+    {
+        //console.log("selecState ", selecState);
+        filterCities = vis.data.filter((d)=>{ return (d.UF === selecState);});
+    }
+    vis.stCity.selectAll("option").remove();
+    vis.stCity.selectAll("option")
+        .data(vis.cityDefaultOp.concat(filterCities), function(d){ return d.nome})
+        .enter()
+        .append("option")
+        .text(function(d) {return d.nome;})
+        .attr("value", function(d) {return d.id;});    
+
+    this.onChangeCity();
+
     
 };
+
+BoxPlot.prototype.onChangeCity = function() {
+
+}
 
 BoxPlot.prototype.onChangeAttr = function() {
    //console.log("onChangeAttr ", $("#attr-select").val())

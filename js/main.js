@@ -2,6 +2,23 @@
 *    main.js
 *   
 */
+
+// d3.timeFormatDefaultLocale({
+//     "decimal": ",",
+//     "thousands": ".",
+//     "grouping": [3],
+//     "currency": ["R$", ""],
+//     "dateTime": "%d/%m/%Y %H:%M:%S",
+//     "date": "%d/%m/%Y",
+//     "time": "%H:%M:%S",
+//     "periods": ["AM", "PM"],
+//     "days": ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"],
+//     "shortDays": ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
+//     "months": ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"],
+//     "shortMonths": ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+//   });
+
+var isFirst = true;
 let startTime = performance.now()
 
 let stState = "stState", selectRegion = "stRegion";
@@ -20,7 +37,7 @@ let boxPlot;
 var timeParseYear = d3.timeParse("%Y");
 var timeFormatYear = d3.timeFormat("%Y");
 
-var formatNum = d3.format(".0f");
+var formatNum = d3.format(",.0f");
 let formatMoney = d3.format("$,.0f");
 
 let regionColors = d3.scaleOrdinal(d3.schemeSet1);
@@ -33,6 +50,9 @@ var dataExpensePromises = [];
 var expensesCSVKeys = ["id","UF","População 2016","nome","Total da Despesa por Função per capita","Legislativa per capita","Judiciária per capita","Essencial à Justiça per capita","Administração per capita","Defesa Nacional per capita","Segurança Pública per capita","Relações Exteriores per capita","Assistência Social per capita","Previdência Social per capita","Saúde per capita","Trabalho per capita","Educação per capita","Cultura per capita","Direitos da Cidadania per capita","Urbanismo per capita","Habitação per capita","Saneamento per capita","Gestão Ambiental per capita","Ciência e Tecnologia per capita","Agricultura per capita","Organização Agrária per capita","Indústria per capita","Comércio e Serviços per capita","Comunicações per capita","Energia per capita","Transporte per capita","Desporto e Lazer per capita","Encargos Especiais per capita","TOTAL DA DESPESA POR FUNÇÃO (INTRAORÇAMENTÁRIA) per capita","TOTAL GERAL DA DESPESA POR FUNÇÃO per capita"];
 var selecBoxKey = "Legislativa per capita";
 var expensesCSVNumKeys = ["id","População 2016","Total da Despesa por Função per capita","Legislativa per capita","Judiciária per capita","Essencial à Justiça per capita","Administração per capita","Defesa Nacional per capita","Segurança Pública per capita","Relações Exteriores per capita","Assistência Social per capita","Previdência Social per capita","Saúde per capita","Trabalho per capita","Educação per capita","Cultura per capita","Direitos da Cidadania per capita","Urbanismo per capita","Habitação per capita","Saneamento per capita","Gestão Ambiental per capita","Ciência e Tecnologia per capita","Agricultura per capita","Organização Agrária per capita","Indústria per capita","Comércio e Serviços per capita","Comunicações per capita","Energia per capita","Transporte per capita","Desporto e Lazer per capita","Encargos Especiais per capita","TOTAL DA DESPESA POR FUNÇÃO (INTRAORÇAMENTÁRIA) per capita","TOTAL GERAL DA DESPESA POR FUNÇÃO per capita"];
+var moneyKeys = expensesCSVNumKeys.filter(d=>d != "id" &&  d!= "População 2016")
+//console.log("moneyKeys ", moneyKeys);
+//+ Atributos para mostrar no select do boxplot
 var attrToSelect = expensesCSVNumKeys.slice(1,expensesCSVNumKeys.length);
 var popKey = "População 2016";
 var qtMunClKeys = ["< 5000",">= 5000"];
@@ -254,9 +274,12 @@ function isCity(node)
 
 }
 
-function isRegion(node)
+function getTickFormat(attrKey)
 {
-
+    if(moneyKeys.includes(attrKey))
+        return function(d){ return "R$ " + formatNum(d); };
+    else 
+        return d=>d;
 }
 
 function getRandomInt(maxExclusive)
