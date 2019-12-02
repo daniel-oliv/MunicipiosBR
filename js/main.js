@@ -77,21 +77,7 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
     }
    //console.log("expensesCSVData", expensesCSVData);
    //console.log("statesExpensesData", citesExpensesData);
-    //FileManager.saveCSV("teste", citesExpensesData);
-
-
-    //! getting the idhm data
-    // console.log("idhData ", idhData)
-    // FileManager.appendColumn(idhData, citesExpensesData, 
-    //     ["IDHM 2010", "IDHM Educação 2010", "IDHM Longevidade 2010", "IDHM Renda 2010"], (a,b)=>{return a.id==b.id.toString().slice(0,6);} );
-    // FileManager.saveCSV("ExpensesAndIDHMs", citesExpensesData);
     
-    //! putting revenue data in one File
-    //FileManager.getRevenueData(regionsJSON);
-
-    //! getting the revenue data
-    FileManager.appendRevenueData();
-
     let statesAndRegions = estadosJSON.concat(regionsJSON);
     //console.log(statesAndRegions)
     statesAndRegions.push({id:0, nome:"Brasil", sigla:"BR"});
