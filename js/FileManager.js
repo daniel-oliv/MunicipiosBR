@@ -2,7 +2,10 @@ FileManager = function(){
 }
 
 FileManager.saveFile = function(name, type, content)
-{ 
+{ console.log("saveFile");
+    console.log("name", name);
+    console.log("type", type);
+    console.log("content", content);
     var hiddenElement = document.createElement('a');
     hiddenElement.href = 'data:text/' + type + ';charset=utf-8,' + encodeURI(content);
     hiddenElement.target = '_blank';
@@ -121,9 +124,10 @@ FileManager.appendRevenueData = function()
 
     let expAndIDHMNameFile = "data/ExpensesAndIDHMs.csv";
     let revenuesNameFile = "data/Receitas.csv";
-    let outputName = "ExpensesRevenuesAndIDHM.csv";
-    //let keys = ["Receita Total","Receitas Correntes","IPTU","ITBI","ISS","Transferências Correntes","Transferências da União","FPM","ITR","SUS Fundo a Fundo - União","FNAS","FNDE","Transferências dos Estados"] ;
-    let keys = ["Receita Total","Receitas Correntes","IPTU","ITBI","ISS","Transferências Correntes","Transferências da União","FPM","Transferências dos Estados"] ;
+    let outputName = "ExpensesRevenuesAndIDHM";
+    let _keys = ["Receita Total","Receitas Correntes","IPTU","ITBI","ISS","Transferências Correntes","Transferências da União","FPM","ITR","SUS Fundo a Fundo - União","FNAS","FNDE","Transferências dos Estados"] ;
+    //let keys = ["Receita Total","Receitas Correntes","IPTU","ITBI","ISS","Transferências Correntes","Transferências da União","FPM","Transferências dos Estados"] ;
+    //let keys = ["Receita Total","Receitas Correntes","IPTU","ITBI","ISS"] ;
 
     let promisses = [];
     promisses.push(d3.csv(revenuesNameFile));   
@@ -132,7 +136,7 @@ FileManager.appendRevenueData = function()
     Promise.all(promisses).then(function([revenuesData, expensesAndIDHMData]){
         console.log("FileManager.appendFiles - revenuesData", revenuesData);
         FileManager.appendColumn(revenuesData, expensesAndIDHMData, 
-                                    keys, (a,b)=>{return a.id==b.id;} );
+                                    _keys, (a,b)=>{return a.id==b.id;} );
         FileManager.saveCSV(outputName, expensesAndIDHMData);
         
     }).catch(error=>{
