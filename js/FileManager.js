@@ -40,12 +40,13 @@ FileManager.getStrCSVToSave = function(csvMapObj)
     let content = keys.join(",")+"\r\n";
     for (const dataRow of csvMapObj) {
         for (const key of firstKeys) {
-            if(dataRow[key])
-                content += dataRow[key] + ",";
-            else
-            content += "" + ",";
+            if(dataRow[key]) content += dataRow[key];
+            //else {console.log("key [" + key + "] not found for row: ", dataRow);}
+            content += ",";
         }
-        content += dataRow[lastKey] + "\r\n"
+        if(dataRow[lastKey]) content += dataRow[lastKey];
+        //else{console.log("key [" + lastKey + "] not found for row: ", dataRow);}
+        content+= "\r\n";
     }
     return content;
 }
@@ -75,3 +76,68 @@ FileManager.appendColumn = function(sourceData, destinyData, keysToAdd, matchFun
     console.log("FileManager: appendColumn - countMatch ", countMatch);
 }
 
+FileManager.appendFiles = function(paths, fileName)
+{
+    let allData = [];
+
+    let promisses = [];
+
+    for (const path of paths) {
+        promisses.push(d3.csv(path));
+    }    
+
+    Promise.all(promisses).then(function(separateData){
+        console.log("FileManager.appendFiles - data", separateData);
+        for (const table of separateData) {
+            for (const row of table) {
+                allData.push(row);
+            }
+        }
+        FileManager.saveCSV(fileName, allData);
+        
+    }).catch(error=>{
+        console.log("FileManager.appendFiles - Erro ao ler os arquivos: ", error);
+    });
+}
+
+
+
+
+////////////// funções personalizadas para os dados
+FileManager.getRevenueData = function(regionsJSON)
+{
+    let paths = [] ;
+    for (const region of regionsJSON) {
+        paths.push("data/Receitas"+region.nome+'.csv');
+    }
+    console.log("mountRevenueFile.mountRevenueFileNames paths", paths);
+    FileManager.appendFiles(paths, "Receitas");
+
+}
+
+////////////// funções personalizadas para os dados
+FileManager.appendRevenueData = function()
+{
+
+    let expAndIDHMNameFile = "data/ExpensesAndIDHMs.csv";
+    let revenuesNameFile = "data/Receitas.csv";
+    let outputName = "ExpensesRevenuesAndIDHM.csv";
+    //let keys = ["Receita Total","Receitas Correntes","IPTU","ITBI","ISS","Transferências Correntes","Transferências da União","FPM","ITR","SUS Fundo a Fundo - União","FNAS","FNDE","Transferências dos Estados"] ;
+    let keys = ["Receita Total","Receitas Correntes","IPTU","ITBI","ISS","Transferências Correntes","Transferências da União","FPM","Transferências dos Estados"] ;
+
+    let promisses = [];
+    promisses.push(d3.csv(revenuesNameFile));   
+    promisses.push(d3.csv(expAndIDHMNameFile)); 
+
+    Promise.all(promisses).then(function([revenuesData, expensesAndIDHMData]){
+        console.log("FileManager.appendFiles - revenuesData", revenuesData);
+        FileManager.appendColumn(revenuesData, expensesAndIDHMData, 
+                                    keys, (a,b)=>{return a.id==b.id;} );
+        FileManager.saveCSV(outputName, expensesAndIDHMData);
+        
+    }).catch(error=>{
+        console.log("FileManager.appendFiles - Erro ao ler os arquivos: ", error);
+    });
+
+    
+}
