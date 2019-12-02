@@ -40,10 +40,38 @@ FileManager.getStrCSVToSave = function(csvMapObj)
     let content = keys.join(",")+"\r\n";
     for (const dataRow of csvMapObj) {
         for (const key of firstKeys) {
-            content += dataRow[key] + ",";
+            if(dataRow[key])
+                content += dataRow[key] + ",";
+            else
+            content += "" + ",";
         }
         content += dataRow[lastKey] + "\r\n"
     }
     return content;
+}
+
+FileManager.appendColumn = function(sourceData, destinyData, keysToAdd, matchFunction)
+{
+    let countMatch = 0;
+    console.log("FileManager.appendColumn sourceData", sourceData);
+    console.log("FileManager.appendColumn destinyData", destinyData);
+    console.log("FileManager.appendColumn keys", keysToAdd);
+    for (const newData of sourceData) {
+        for (const data of destinyData) {
+            /// just two equal signs, since the data may have been parsed to number with d[key]=+d[key]
+            if(matchFunction(newData, data))
+            {
+                //console.log("Data matched.");
+                for (const key of keysToAdd) {
+                    data[key] = newData[key];
+                }
+                /// for every data matched
+                countMatch++;
+                //!and go next since the current data was already found
+                break;
+            }
+        }
+    }
+    console.log("FileManager: appendColumn - countMatch ", countMatch);
 }
 

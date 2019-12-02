@@ -46,6 +46,7 @@ var stratifyRegion = d3.stratify()
     .parentId(function(d) { return d.id ? (Math.floor(d.id/10)) : ""; });
 
 var dataPromises = [d3.json("data/estados.json"), d3.json("data/regioes.json"), d3.csv("data/NumDeMunicípios.csv")];
+var dataToCompletePromises = [d3.csv("data/IDH_2010_SemVirgulasHeader.csv")];
 var dataExpensePromises = [];
 var expensesCSVKeys = ["id","UF","População 2016","nome","Total da Despesa por Função per capita","Legislativa per capita","Judiciária per capita","Essencial à Justiça per capita","Administração per capita","Defesa Nacional per capita","Segurança Pública per capita","Relações Exteriores per capita","Assistência Social per capita","Previdência Social per capita","Saúde per capita","Trabalho per capita","Educação per capita","Cultura per capita","Direitos da Cidadania per capita","Urbanismo per capita","Habitação per capita","Saneamento per capita","Gestão Ambiental per capita","Ciência e Tecnologia per capita","Agricultura per capita","Organização Agrária per capita","Indústria per capita","Comércio e Serviços per capita","Comunicações per capita","Energia per capita","Transporte per capita","Desporto e Lazer per capita","Encargos Especiais per capita","TOTAL DA DESPESA POR FUNÇÃO (INTRAORÇAMENTÁRIA) per capita","TOTAL GERAL DA DESPESA POR FUNÇÃO per capita"];
 var selecBoxKey = "Legislativa per capita";
@@ -56,6 +57,8 @@ var moneyKeys = expensesCSVNumKeys.filter(d=>d != "id" &&  d!= "População 2016
 var attrToSelect = expensesCSVNumKeys.slice(1,expensesCSVNumKeys.length);
 var popKey = "População 2016";
 var qtMunClKeys = ["< 5000",">= 5000"];
+
+Promise.all(dataToCompletePromises).then(function([idhData]){
 
 Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
     for (const region of regionsJSON) {
@@ -75,7 +78,11 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
    //console.log("expensesCSVData", expensesCSVData);
    //console.log("statesExpensesData", citesExpensesData);
     //FileManager.saveCSV("teste", citesExpensesData);
-    //console.log(yearKeys);
+    console.log("idhData ", idhData)
+    FileManager.appendColumn(idhData, citesExpensesData, 
+        ["IDHM 2010", "IDHM Educação 2010", "IDHM Longevidade 2010", "IDHM Renda 2010"], (a,b)=>{return a.id==b.id.toString().slice(0,6);} );
+    FileManager.saveCSV("ExpensesAndIDHMs", citesExpensesData);
+        //console.log(yearKeys);
     //console.log(estadosJSON)
     let statesAndRegions = estadosJSON.concat(regionsJSON);
     //console.log(statesAndRegions)
@@ -175,6 +182,8 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
 });///expenses promisses all
 
 });
+
+}); //! dataToComplete
 
 function getXYArray(objc, xKeys)
 {
