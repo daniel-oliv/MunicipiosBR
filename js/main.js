@@ -2,7 +2,10 @@
 *    main.js
 *   
 */
-
+String.prototype.replaceAll = function(search, replacement) {
+    var target = this;
+    return target.replace(new RegExp(search, 'g'), replacement);
+};
 // d3.timeFormatDefaultLocale({
 //     "decimal": ",",
 //     "thousands": ".",
@@ -37,8 +40,9 @@ let boxPlot;
 var timeParseYear = d3.timeParse("%Y");
 var timeFormatYear = d3.timeFormat("%Y");
 
-var formatNum = d3.format(",.0f");
+var formatNum = function(d){return d3.format(",.0f")(d).replaceAll(",",".");};
 let formatMoney = d3.format("$,.0f");
+let formatReal = function(d){return d3.format(",.2f")(d).replaceAll(",",".");};
 
 let regionColors = d3.scaleOrdinal(d3.schemeSet1);
 
@@ -48,33 +52,46 @@ var stratifyRegion = d3.stratify()
 var dataPromises = [d3.json("data/estados.json"), d3.json("data/regioes.json"), d3.csv("data/NumDeMunicípios.csv")];
 var dataToCompletePromises = [d3.csv("data/IDH_2010_SemVirgulasHeader.csv")];
 var dataExpensePromises = [];
-var expensesCSVKeys = ["id","UF","População 2016","nome","Total da Despesa por Função per capita","Legislativa per capita","Judiciária per capita","Essencial à Justiça per capita","Administração per capita","Defesa Nacional per capita","Segurança Pública per capita","Relações Exteriores per capita","Assistência Social per capita","Previdência Social per capita","Saúde per capita","Trabalho per capita","Educação per capita","Cultura per capita","Direitos da Cidadania per capita","Urbanismo per capita","Habitação per capita","Saneamento per capita","Gestão Ambiental per capita","Ciência e Tecnologia per capita","Agricultura per capita","Organização Agrária per capita","Indústria per capita","Comércio e Serviços per capita","Comunicações per capita","Energia per capita","Transporte per capita","Desporto e Lazer per capita","Encargos Especiais per capita","TOTAL DA DESPESA POR FUNÇÃO (INTRAORÇAMENTÁRIA) per capita","TOTAL GERAL DA DESPESA POR FUNÇÃO per capita"];
+var completeExpensePromisse = d3.csv("data/Despesas-idhm-receitas-transferencias.csv");
+//var expensesCSVKeys = ["id","UF","População 2016","nome","Total da Despesa por Função per capita","Legislativa per capita","Judiciária per capita","Essencial à Justiça per capita","Administração per capita","Defesa Nacional per capita","Segurança Pública per capita","Relações Exteriores per capita","Assistência Social per capita","Previdência Social per capita","Saúde per capita","Trabalho per capita","Educação per capita","Cultura per capita","Direitos da Cidadania per capita","Urbanismo per capita","Habitação per capita","Saneamento per capita","Gestão Ambiental per capita","Ciência e Tecnologia per capita","Agricultura per capita","Organização Agrária per capita","Indústria per capita","Comércio e Serviços per capita","Comunicações per capita","Energia per capita","Transporte per capita","Desporto e Lazer per capita","Encargos Especiais per capita","TOTAL DA DESPESA POR FUNÇÃO (INTRAORÇAMENTÁRIA) per capita","TOTAL GERAL DA DESPESA POR FUNÇÃO per capita"];
+var expensesCSVKeys = ["id", "UF", "População 2016", "nome", "Total da Despesa por Função per capita", "Legislativa per capita", "Judiciária per capita", "Essencial à Justiça per capita", "Administração per capita", "Defesa Nacional per capita", "Segurança Pública per capita", "Relações Exteriores per capita", "Assistência Social per capita", "Previdência Social per capita", "Saúde per capita", "Trabalho per capita", "Educação per capita", "Cultura per capita", "Direitos da Cidadania per capita", "Urbanismo per capita", "Habitação per capita", "Saneamento per capita", "Gestão Ambiental per capita", "Ciência e Tecnologia per capita", "Agricultura per capita", "Organização Agrária per capita", "Indústria per capita", "Comércio e Serviços per capita", "Comunicações per capita", "Energia per capita", "Transporte per capita", "Desporto e Lazer per capita", "Encargos Especiais per capita", "TOTAL DA DESPESA POR FUNÇÃO (INTRAORÇAMENTÁRIA) per capita", "TOTAL GERAL DA DESPESA POR FUNÇÃO per capita", 
+                        "IDHM 2010", "IDHM Educação 2010", "IDHM Longevidade 2010", "IDHM Renda 2010", 
+                        "Receita Total", "Receitas Correntes", "IPTU", "ITBI", "ISS", 
+                        "Transferências Correntes", "Transferências da União", "FPM", "ITR", "SUS Fundo a Fundo - União", "FNAS", "FNDE", "Transferências dos Estados"];
 var selecBoxKey = "Legislativa per capita";
-var expensesCSVNumKeys = ["id","População 2016","Total da Despesa por Função per capita","Legislativa per capita","Judiciária per capita","Essencial à Justiça per capita","Administração per capita","Defesa Nacional per capita","Segurança Pública per capita","Relações Exteriores per capita","Assistência Social per capita","Previdência Social per capita","Saúde per capita","Trabalho per capita","Educação per capita","Cultura per capita","Direitos da Cidadania per capita","Urbanismo per capita","Habitação per capita","Saneamento per capita","Gestão Ambiental per capita","Ciência e Tecnologia per capita","Agricultura per capita","Organização Agrária per capita","Indústria per capita","Comércio e Serviços per capita","Comunicações per capita","Energia per capita","Transporte per capita","Desporto e Lazer per capita","Encargos Especiais per capita","TOTAL DA DESPESA POR FUNÇÃO (INTRAORÇAMENTÁRIA) per capita","TOTAL GERAL DA DESPESA POR FUNÇÃO per capita"];
-var moneyKeys = expensesCSVNumKeys.filter(d=>d != "id" &&  d!= "População 2016")
-//console.log("moneyKeys ", moneyKeys);
+//var expensesCSVNumKeys = ["id","População 2016","Total da Despesa por Função per capita","Legislativa per capita","Judiciária per capita","Essencial à Justiça per capita","Administração per capita","Defesa Nacional per capita","Segurança Pública per capita","Relações Exteriores per capita","Assistência Social per capita","Previdência Social per capita","Saúde per capita","Trabalho per capita","Educação per capita","Cultura per capita","Direitos da Cidadania per capita","Urbanismo per capita","Habitação per capita","Saneamento per capita","Gestão Ambiental per capita","Ciência e Tecnologia per capita","Agricultura per capita","Organização Agrária per capita","Indústria per capita","Comércio e Serviços per capita","Comunicações per capita","Energia per capita","Transporte per capita","Desporto e Lazer per capita","Encargos Especiais per capita","TOTAL DA DESPESA POR FUNÇÃO (INTRAORÇAMENTÁRIA) per capita","TOTAL GERAL DA DESPESA POR FUNÇÃO per capita"];
+var expensesCSVNumKeys = expensesCSVKeys.filter(d=>d != "nome" &&  d!= "UF");
+console.log("expensesCSVNumKeys ", expensesCSVNumKeys);
+var noMoneyNumeralKeys = ["id", "População 2016", "IDHM 2010", "IDHM Educação 2010", "IDHM Longevidade 2010", "IDHM Renda 2010"];
+var moneyKeys = expensesCSVNumKeys.filter(d=>!noMoneyNumeralKeys.includes(d));
+var noRoundKeys = ["IDHM 2010", "IDHM Educação 2010", "IDHM Longevidade 2010", "IDHM Renda 2010", "Receita própria % (IPTU, ITBI, ISS)"];
+console.log("moneyKeys ", moneyKeys);
+let percentRevenueKey = "Receita própria % (IPTU, ITBI, ISS)";
 //+ Atributos para mostrar no select do boxplot
-var attrToSelect = expensesCSVNumKeys.slice(1,expensesCSVNumKeys.length);
+var attrToSelect = expensesCSVNumKeys.filter(d=>d != "id").concat(percentRevenueKey);
 var popKey = "População 2016";
 var qtMunClKeys = ["< 5000",">= 5000"];
+var ownRevenueKeys = ["IPTU", "ITBI", "ISS"];
+var totalRevenueKey = "Receita Total";
 
-Promise.all(dataToCompletePromises).then(function([idhData]){
+/// promise dataToComplete
+//Promise.all(dataToCompletePromises).then(function([idhData]){
 
 Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
-    for (const region of regionsJSON) {
-        dataExpensePromises.push(d3.csv("data/DespesaPorFuncao-PerCapita-"+region.nome+'.csv'))
-    }
-    Promise.all(dataExpensePromises).then(function(expensesCSVData){
-    
+    // for (const region of regionsJSON) {
+    //     dataExpensePromises.push(d3.csv("data/DespesaPorFuncao-PerCapita-"+region.nome+'.csv'))
+    // }
+    Promise.all([completeExpensePromisse]).then(function([completeExpenses]){
+        
     let citesExpensesData = [];
-    for (const region of expensesCSVData) {
-        for (const city of region) {
-            for (const expKey of expensesCSVNumKeys) {
-                city[expKey] = +city[expKey];
-            }
-            citesExpensesData.push(city)
+    for (const city of completeExpenses) {
+        for (const expKey of expensesCSVNumKeys) {
+            city[expKey] = +city[expKey];
         }
+        citesExpensesData.push(city);
     }
+    insertPercentOwnRevenue(citesExpensesData);
+    insertSaldo(citesExpensesData);
    //console.log("expensesCSVData", expensesCSVData);
    //console.log("statesExpensesData", citesExpensesData);
     
@@ -177,7 +194,7 @@ Promise.all(dataPromises).then(function([estadosJSON, regionsJSON, numMunCSV]){
 
 });
 
-}); //! dataToComplete
+//}); //! dataToComplete
 
 function getXYArray(objc, xKeys)
 {
@@ -281,11 +298,61 @@ function getTickFormat(attrKey)
 {
     if(moneyKeys.includes(attrKey))
         return function(d){ return "R$ " + formatNum(d); };
+    else if(noRoundKeys.includes(attrKey))
+        return formatReal;
     else 
-        return d=>d;
+        return formatNum;
+
 }
 
 function getRandomInt(maxExclusive)
 {
     return Math.floor(Math.random() * maxExclusive);
+}
+
+function insertPercentOwnRevenue(citiesData)
+{
+    let count = 0;
+    for (const city of citiesData) {
+        let onwRev = 0;
+        if(isAllValid(ownRevenueKeys, (d, city)=>{return city[d];}, city))
+        {
+            count++;
+            for (const key of ownRevenueKeys) {
+                onwRev += city[key];
+            }
+            city[percentRevenueKey] = onwRev/city[totalRevenueKey];
+        }
+    } 
+    console.log("Receita própria adicionada a "+ count +  " cidades");
+}
+
+function insertSaldo(citiesData)
+{
+    let count = 0;
+    let saldoKey = "Diferença entre Despesa por Função e Receita";
+    let totalExp = "Total da Despesa por Função per capita";
+
+    for (const city of citiesData) {
+        if(isAllValid([totalExp, totalRevenueKey], (d, city)=>{return city[d];}, city))
+        {
+            count++;
+            city[saldoKey] = city[totalRevenueKey] - city[totalExp]*city[popKey];
+        }
+    } 
+    attrToSelect.push(saldoKey);
+    console.log("Saldo adicionado a "+ count +  " cidades");
+}
+
+function isAllValid(array, validFunction, anotherParam)
+{
+    areValid = true;
+    for (const item of array) {
+        if(!validFunction(item, anotherParam))
+        {
+            areValid = false;
+            return areValid;
+        }
+    }
+    return areValid;
 }

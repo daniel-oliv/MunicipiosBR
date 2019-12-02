@@ -299,7 +299,7 @@ vis.circles = vis.g.selectAll(".circle-box")
         .attr("cx", function(d){return d.x;})
         .attr("cy", function(d){return vis.y(d[selecBoxKey] );})
         .append("title")
-            .text(function(d) { return d["nome"] + ", " + d["UF"]+ "\n" + selecBoxKey + ": "+ d[selecBoxKey] + "\n"; });
+            .text(function(d) { return d["nome"] + ", " + d["UF"]+ "\n" + selecBoxKey + ": "+ getTickFormat(selecBoxKey)(d[selecBoxKey]) + "\n"; });
 }
 
 BoxPlot.prototype.filterData = function()
